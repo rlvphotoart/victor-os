@@ -288,6 +288,12 @@ export const repository = {
   },
 
   reset() {
-    return this.replaceAll(emptyData());
+    return enqueue(async () => {
+      await api<{ ok: true }>("/api/reset", {
+        method: "POST",
+        body: "{}",
+      });
+      await load();
+    });
   },
 };

@@ -364,7 +364,7 @@ export function DashboardPage({ data }: { data: AppData }) {
               .sort((a, b) => a.title.localeCompare(b.title))
               .slice(0, 6)
               .map((item) => (
-                  <Link key={item.id} to={`/playbooks#${item.id}`}>
+                <Link key={item.id} to={`/playbooks#${item.id}`}>
                   <BookOpenCheck size={17} strokeWidth={1.6} />
                   <span>{item.title}</span>
                   <ArrowUpRight size={15} />

@@ -7,6 +7,12 @@ import {
 } from "../src/data/backup";
 import { makeDemoData } from "../src/data/demo";
 import type { AppData, AppSettings } from "../src/types";
+import {
+  chatRoute,
+  chatSystemOwner,
+  listChatConnections,
+  revokeChatConnection,
+} from "./chat-bridge";
 
 interface Env {
   DB: D1Database;
@@ -331,9 +337,19 @@ export async function handleApiForOwner(
       await env.DB.prepare("SELECT 1 FROM records LIMIT 1").first();
       return json({ status: "ready" });
     }
+    if (request.method === "GET" && path === "/api/chat-connections") {
+      return json({ connections: await listChatConnections(env.DB) });
+    }
     if (!safeMutation(request, env))
       return json({ error: "Request origin or content type rejected." }, 403);
     const input = await body(request);
+    if (request.method === "DELETE" && path === "/api/chat-connections") {
+      const id = asObject(input).id;
+      if (typeof id !== "string" || !id)
+        return json({ error: "Invalid connection ID." }, 400);
+      const removed = await revokeChatConnection(env.DB, id);
+      return json({ ok: true, removed });
+    }
     if (path.startsWith("/api/records/")) {
       const parts = path.split("/");
       if (parts.length !== 5)
@@ -386,6 +402,18 @@ export async function handleApiForOwner(
       await replaceAll(env.DB, owner, input);
       return json({ ok: true });
     }
+    if (request.method === "POST" && path === "/api/reset") {
+      await env.DB.batch([
+        env.DB.prepare("DELETE FROM records WHERE owner = ?").bind(owner),
+        env.DB.prepare("DELETE FROM records WHERE owner = ?").bind(
+          chatSystemOwner,
+        ),
+        env.DB.prepare(
+          "INSERT INTO records (owner, collection, id, payload, revision) VALUES (?, 'settings', 'app', ?, 1)",
+        ).bind(owner, JSON.stringify(defaultSettings)),
+      ]);
+      return json({ ok: true });
+    }
     return json({ error: "Unknown API endpoint." }, 404);
   } catch (error) {
     if (
@@ -405,6 +433,8 @@ export async function handleApiForOwner(
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const chatResponse = await chatRoute(request, env);
+    if (chatResponse) return chatResponse;
     if (!new URL(request.url).pathname.startsWith("/api/"))
       return json({ error: "Not found." }, 404);
     const path = new URL(request.url).pathname;

@@ -1,11 +1,13 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Check,
   Cloud,
+  Copy,
   Download,
   FileJson,
   LogOut,
   Moon,
+  PlugZap,
   RotateCcw,
   ShieldCheck,
   Smartphone,
@@ -66,17 +68,50 @@ const widgetOptions: { id: WidgetId; label: string; description: string }[] = [
   },
 ];
 
+type ChatConnection = { id: string; createdAt: number; scopes: string[] };
+
+async function loadChatConnections(): Promise<ChatConnection[]> {
+  const response = await fetch("/api/chat-connections", {
+    credentials: "same-origin",
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Could not check ChatGPT connections.");
+  const body = (await response.json()) as { connections: ChatConnection[] };
+  return body.connections;
+}
+
 export function SettingsPage({ data }: { data: AppData }) {
   const settings = data.settings[0];
   const [name, setName] = useState(settings?.name ?? "Victor");
   const [preview, setPreview] = useState<BackupFile | null>(null);
   const [importError, setImportError] = useState("");
   const [personalizing, setPersonalizing] = useState(false);
+  const [chatConnections, setChatConnections] = useState<
+    ChatConnection[] | null
+  >(null);
+  const [chatConnectionError, setChatConnectionError] = useState("");
+  const [revokingChat, setRevokingChat] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<
     "import" | "reset" | "demo" | "seed" | null
   >(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const notify = useToast();
+  useEffect(() => {
+    let active = true;
+    void loadChatConnections()
+      .then((connections) => {
+        if (active) setChatConnections(connections);
+      })
+      .catch((issue: unknown) => {
+        if (active)
+          setChatConnectionError(
+            issue instanceof Error ? issue.message : "Connection check failed.",
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   const demoCount = [
     "projects",
     "tasks",
@@ -265,6 +300,106 @@ export function SettingsPage({ data }: { data: AppData }) {
             ))}
           </div>
         </Card>
+        <Card className="chat-connection-card">
+          <CardHeader
+            eyebrow="CHATGPT CONNECTION"
+            title="Update Victor OS by conversation"
+            subtitle="Tell ChatGPT what changed. It chooses the right category and writes directly to this live workspace."
+          />
+          <p className="helper-line">
+            A completed payment becomes a transaction; a payment to make later
+            becomes a task. Context can become a note, and multi-step work can
+            become a project. ChatGPT asks for missing details instead of
+            inventing them.
+          </p>
+          <div className="chat-endpoint">
+            <code>{window.location.origin + "/mcp"}</code>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                void navigator.clipboard
+                  .writeText(window.location.origin + "/mcp")
+                  .then(() => notify("Connector URL copied"))
+                  .catch(() => notify("Could not copy the URL", "error"));
+              }}
+            >
+              <Copy size={16} /> Copy URL
+            </Button>
+          </div>
+          <ol className="chat-steps">
+            <li>
+              In ChatGPT Work, enable Developer mode in Settings → Security and
+              login.
+            </li>
+            <li>
+              Open Plugins, add this MCP URL, and install the private plugin.
+            </li>
+            <li>
+              When prompted, authorize on the Victor OS page with your existing
+              access key.
+            </li>
+            <li>
+              In a Work chat, select Victor OS and describe the change in
+              ordinary language.
+            </li>
+          </ol>
+          <p className="helper-line">
+            No OpenAI API key or paid AI API is required. The access key stays
+            with Victor OS; ChatGPT receives a revocable connection. ChatGPT
+            only receives the details needed for the action you request.
+          </p>
+          <div className="chat-connections">
+            <strong>
+              <PlugZap size={16} /> Active ChatGPT connections
+            </strong>
+            {chatConnectionError && (
+              <span className="form-error">{chatConnectionError}</span>
+            )}
+            {chatConnections?.length === 0 && <span>None yet</span>}
+            {chatConnections?.map((connection) => (
+              <div key={connection.id} className="chat-connection-row">
+                <span>
+                  Connected{" "}
+                  {new Date(connection.createdAt).toLocaleDateString()} · read
+                  and write
+                </span>
+                <Button
+                  variant="secondary"
+                  disabled={revokingChat === connection.id}
+                  onClick={async () => {
+                    setRevokingChat(connection.id);
+                    try {
+                      const response = await fetch("/api/chat-connections", {
+                        method: "DELETE",
+                        credentials: "same-origin",
+                        headers: {
+                          "Content-Type": "application/json",
+                          "X-Victor-Request": "1",
+                        },
+                        body: JSON.stringify({ id: connection.id }),
+                      });
+                      if (!response.ok)
+                        throw new Error("Could not revoke connection.");
+                      setChatConnections(await loadChatConnections());
+                      notify("ChatGPT connection revoked");
+                    } catch (issue) {
+                      notify(
+                        issue instanceof Error
+                          ? issue.message
+                          : "Revocation failed",
+                        "error",
+                      );
+                    } finally {
+                      setRevokingChat(null);
+                    }
+                  }}
+                >
+                  Revoke
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
         <Card className="backup-card">
           <CardHeader
             eyebrow="YOUR DATA"
@@ -443,13 +578,14 @@ export function SettingsPage({ data }: { data: AppData }) {
       {confirm === "reset" && (
         <ConfirmDialog
           title="Reset Victor OS?"
-          message="Every project, task, money record, prompt, note, link, and setting in the cloud will be deleted on every device. Export a backup first if you want to keep anything."
+          message="Every project, task, money record, prompt, note, link, and setting in the cloud will be deleted on every device. ChatGPT connections will be revoked. Export a backup first if you want to keep anything."
           phrase="RESET VICTOR OS"
           confirmLabel="Reset database"
           onClose={() => setConfirm(null)}
           onConfirm={async () => {
             await repository.reset();
             setName("Victor");
+            setChatConnections([]);
             notify("Database reset");
           }}
         />

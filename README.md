@@ -15,6 +15,7 @@ A private personal command center for projects, tasks, finances, prompts, notes,
 - Browser-only utilities for JSON, Base64, URL encoding, timestamps, UUIDs, text diff, regex, counting, token estimates, and requirement/test ID reconciliation.
 - Global command palette, responsive mobile navigation, dark/light theme, and installable PWA.
 - Complete JSON backup and restore, demo-data removal, and a strongly confirmed reset.
+- A private ChatGPT MCP connection that classifies conversational updates and writes supported records directly to D1.
 
 The interface design rationale is in [DESIGN_LANGUAGE.md](DESIGN_LANGUAGE.md). All fonts are self-hosted. No analytics, ad trackers, paid AI APIs, or bank APIs are used.
 
@@ -29,6 +30,7 @@ The interface design rationale is in [DESIGN_LANGUAGE.md](DESIGN_LANGUAGE.md). A
 | Validation     | Zod on both the client and the Worker                       |
 | PWA            | Vite PWA service worker and web manifest                    |
 | Backups        | Versioned JSON export/import                                |
+| ChatGPT bridge | MCP over HTTPS with OAuth 2.1 authorization code + PKCE     |
 
 Normal app data flows through [src/data/repository.ts](src/data/repository.ts), including appearance, dock layout, recent contexts, and command history. The repository serializes writes, refreshes when the app regains focus and every minute while open, and rejects stale edits to the same record rather than silently overwriting them. [worker/index.ts](worker/index.ts) validates requests and writes to D1. [migrations/0001_records.sql](migrations/0001_records.sql) defines the database table. Records are partitioned by a single private workspace owner.
 
@@ -41,6 +43,32 @@ The deployed app does not use IndexedDB or localStorage for application data. Th
 The Worker expects an encrypted secret named ACCESS_KEY. Choose at least 32 **random** characters and keep it in a password manager. Do not put it in Git, a URL, or a backup file. The sign-in form sends it to this Worker's same-origin API over HTTPS. A successful sign-in creates an HttpOnly, Secure, SameSite=Strict cookie for 30 days. The key is never stored in the browser's JavaScript storage. Rotating the Worker secret invalidates existing sessions without deleting D1 data.
 
 The public static files contain no personal records. The API refuses data access when ACCESS_KEY is missing or invalid. For local development only, a gitignored .dev.vars file may set DEV_OWNER; this bypass is restricted to localhost and must never be configured on the deployed Worker.
+
+## Update Victor OS from a ChatGPT conversation
+
+The Worker now serves a private MCP endpoint at `https://your-worker.example/mcp`. It gives ChatGPT focused tools to read limited workspace context and to create or update tasks, projects, and notes; record completed income/expenses; and save prompts. The model interprets the conversation and selects the tool. Each successful tool call writes directly to D1, so the change appears in the live app without a Git commit or code deployment.
+
+The connection uses OAuth 2.1 authorization code with PKCE. During setup, Victor OS asks for the existing access key **on the Victor OS domain**. ChatGPT receives a scoped, revocable token; it never receives the access key. Access tokens expire after one hour, refresh tokens rotate and expire after 30 days, and Settings shows connected sessions with a **Revoke** action. Rotating ACCESS_KEY also invalidates all connections. The OAuth state is stored separately from normal app records, so backups do not export connection tokens; resetting the database revokes every connection.
+
+### Connect in ChatGPT Work
+
+1. In ChatGPT, open Settings → Security and login and enable Developer mode.
+2. Open ChatGPT Plugins, create a personal plugin using the MCP URL above, then install it.
+3. In a Work chat, select the Victor OS plugin and ask it to read the workspace or save a change.
+4. When ChatGPT opens the Victor OS authorization page, check the domain and enter your access key there. Authorize the read/write connection.
+5. Return to Settings → ChatGPT connection in Victor OS to see or revoke the connection.
+
+The current setup follows the [official ChatGPT plugin quickstart](https://developers.openai.com/plugins/quickstart) and [OAuth guidance](https://developers.openai.com/plugins/build/auth). Availability of the Plugins and Work interface depends on the ChatGPT account and workspace. This is a personal connection; it does not require an OpenAI API key or paid model API calls from Victor OS. Conversation content is still processed by ChatGPT under the account's privacy settings.
+
+Examples:
+
+- “Adaugă un task important: verific raportul de validare luni.” → task.
+- “Am plătit 40 EUR pentru transport astăzi.” → expense transaction dated today.
+- “Trebuie să plătesc factura vineri.” → task, because the payment has not happened.
+- “Ține minte decizia din ședință…” → note.
+- “Proiectul Victor OS este blocat până la testul pe iPhone.” → project update after resolving the project ID.
+
+For finance, the connector only records completed transactions. It never moves money, changes balances, updates debts, or converts currencies. A transaction in another currency is rejected until the user provides an amount in the workspace currency. Missing amounts, dates, project IDs, or other consequential details should be clarified in the conversation. Duplicate task and transaction checks reduce accidental repeats. Read-only context is limited to project names/status, open task summaries, note titles, the date/timezone, and workspace currency; full financial data is not returned by that tool.
 
 ## Run locally
 
