@@ -103,7 +103,7 @@ export function AILabPage({ data }: { data: AppData }) {
             Prompt register<span aria-hidden="true">.</span>
           </h2>
           <p>Instructions, revisions, and rates kept within reach.</p>
-          <StatusSignal label="LOCAL LIBRARY" tone="active" />
+          <StatusSignal label="SYNCED LIBRARY" tone="active" />
         </div>
         <div className="vos-ai-register-readings">
           <Metric

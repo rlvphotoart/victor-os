@@ -1,119 +1,105 @@
 # Victor OS
 
-A private, local-first personal command center for tasks, projects, money, prompts, notes, links, and small utilities. It is a static progressive web app (PWA) designed for Cloudflare Pages.
+A private personal command center for projects, tasks, finances, prompts, notes, links, and browser utilities. The interface is a React progressive web app. Data is stored in Cloudflare D1 and is available in every browser after signing in with the same access key.
 
 ## What is included
 
-- **Home:** a Now, Attention, and Recent operating view with the next action, financial reading, project runway, and configurable quick access.
-- **Tasks:** Today, board, and all-task views; quick add; project/priority/status filters; sorting; search; completion; editing; deletion; desktop drag between status columns. On touch screens, change status with the selector on each task.
-- **Projects:** status, priority, progress, next action, notes, links, and related task counts.
-- **Money:** manually entered accounts, debt, investments, transactions, monthly category budgets, goals, financial ratios, and a six-month income/expense chart. There are no bank connections.
-- **AI Lab:** searchable prompt library for Codex, ChatGPT, Hermès, Claude, and other tools; favorites, copying, duplication, editing, deletion, and version history. The model cost calculator uses rates you enter and supports side-by-side comparisons.
-- **Notes:** Markdown editor and preview, tags, pins, search, and autosave.
-- **Toolbox:** JSON formatting/validation, Base64, URL encoding, timestamp conversion in both directions, UUID generation, line diff, regex testing, character counting, and rough token estimates. Processing stays in the browser.
-- **Links:** categorized bookmarks with drag ordering on desktop and move buttons on touch screens.
-- **Settings:** appearance, currency display, dashboard widgets, complete JSON backup/restore, clear demo records, and reset.
-- **Victor Command:** `⌘ K` on Mac or `Ctrl K` on Windows to search pages, records, links, and tools or create a task, project, prompt, or note. `N` starts a task when focus is outside a text field.
+- Home dashboard with priorities, financial position, projects, and quick links.
+- Tasks with Today and board views, filters, sorting, drag and drop, and editing.
+- Projects with status, priority, progress, notes, next action, and links.
+- Money with manual accounts, debts, investments, transactions, budgets, goals, and monthly charts. There is no bank connection.
+- AI Lab with prompt search, favorites, duplication, version history, and an editable model cost calculator.
+- Markdown notes with autosave, pins, and search.
+- Browser-only utilities for JSON, Base64, URL encoding, timestamps, UUIDs, text diff, regex, counting, and token estimates.
+- Global command palette, responsive mobile navigation, dark/light theme, and installable PWA.
+- Complete JSON backup and restore, demo-data removal, and a strongly confirmed reset.
 
-The Meridian interface uses a numbered desktop navigation spine, persistent system strip, contextual focus planes, and a five-position mobile dock. Recent contexts and dock expansion are small browser-local UI preferences; the repository's domain data and backup format are unchanged. Project and task objects also expose contextual right-click actions on desktop.
+The interface design rationale is in [DESIGN_LANGUAGE.md](DESIGN_LANGUAGE.md). All fonts are self-hosted. No analytics, ad trackers, paid AI APIs, or bank APIs are used.
 
-The included sample records carry a **DEMO** marker. **Settings → Clear demo data** removes them. Editing a demo record does not remove its DEMO marker, so it will still be cleared; duplicate or create a new record to keep a personal copy.
+## Architecture
 
-## Stack and architecture
+| Layer          | Implementation                                              |
+| -------------- | ----------------------------------------------------------- |
+| UI             | React 19, TypeScript, Vite, Tailwind, Lucide                |
+| Hosting        | Cloudflare Worker with static assets and an API             |
+| Storage        | Cloudflare D1, EU jurisdiction                              |
+| Authentication | One private Worker secret, signed HttpOnly browser sessions |
+| Validation     | Zod on both the client and the Worker                       |
+| PWA            | Vite PWA service worker and web manifest                    |
+| Backups        | Versioned JSON export/import                                |
 
-| Layer      | Choice                                                                             |
-| ---------- | ---------------------------------------------------------------------------------- |
-| UI         | React 19, TypeScript, Vite, Tailwind CSS, custom reusable components, Lucide icons |
-| Routing    | React Router                                                                       |
-| Data       | IndexedDB through Dexie                                                            |
-| Validation | Zod for import schema validation                                                   |
-| PWA        | `vite-plugin-pwa` with a generated service worker and app manifest                 |
-| Hosting    | Static Cloudflare Pages site; no server functions                                  |
+The UI calls only [src/data/repository.ts](src/data/repository.ts). It serializes writes, refreshes when the app regains focus and every minute while open, and rejects stale edits to the same record rather than silently overwriting them. [worker/index.ts](worker/index.ts) validates requests and writes to D1. [migrations/0001_records.sql](migrations/0001_records.sql) defines the database table. Records are partitioned by a single private workspace owner.
 
-The visual system uses self-hosted Inter Variable and IBM Plex Mono font files. `src/os.css` owns Meridian's semantic dark/light tokens, shell, surfaces, motion, and responsive rules. `src/styles.css` retains component anatomy, while `src/redesign.css` holds earlier component refinements still used by the app. The rationale and visual audit are in [DESIGN_LANGUAGE.md](DESIGN_LANGUAGE.md); prior research is in [DESIGN_RESEARCH.md](DESIGN_RESEARCH.md). No font or analytics request is sent to a third-party domain.
+The first authenticated visit seeds clearly marked demo records. Settings can remove only those records, and a reset does not seed them again. If the workspace is empty later, Settings can load the examples again.
 
-`src/data/repository.ts` is the only data access surface used by the UI. It wraps Dexie tables, initialization, snapshots, settings, and atomic full-data replacement. The database schema lives in `src/data/db.ts`; the versioned backup schema lives in `src/data/backup.ts`. A future sync provider can implement the same repository operations without changing page components. Routes are loaded on demand to keep the initial download smaller.
+The old IndexedDB adapter remains in [src/data/localRepository.ts](src/data/localRepository.ts) only to read data created by earlier local versions. Normal edits no longer write to IndexedDB. The PWA shell can be cached, but cloud data requires an internet connection. The service worker does not cache API responses.
 
-There is no account, analytics, tracking script, external telemetry, server database, paid API, or AI API. Opening an external quick link is an explicit user action. The Content Security Policy in `public/_headers` allows application assets from this origin only.
+### Access key
 
-### Important storage behavior
+The Worker expects an encrypted secret named ACCESS_KEY. Choose at least 32 **random** characters and keep it in a password manager. Do not put it in Git, a URL, or a backup file. The sign-in form sends it to this Worker's same-origin API over HTTPS. A successful sign-in creates an HttpOnly, Secure, SameSite=Strict cookie for 30 days. The key is never stored in the browser's JavaScript storage. Rotating the Worker secret invalidates existing sessions without deleting D1 data.
 
-IndexedDB is **per browser and per origin**. Your iPhone, MacBook, and Windows browser can all open the same deployed URL, but their records will be separate until optional sync is implemented. Use Settings → Export all data and Settings → Import data to move records between devices. Regular backups also protect you if a browser profile or site storage is cleared. Private browsing is not suitable for durable storage.
+The public static files contain no personal records. The API refuses data access when ACCESS_KEY is missing or invalid. For local development only, a gitignored .dev.vars file may set DEV_OWNER; this bypass is restricted to localhost and must never be configured on the deployed Worker.
 
-The finance module stores only manual values. Changing the display currency changes the symbol/format; it does not convert balances. Cost calculator prices are editable examples, not live provider quotes.
+## Run locally
 
-## Local development
+Use Node.js 22.16 or later. The repository has a .node-version file.
 
-Use Node.js 22.16 or newer. A `.node-version` file pins 22.16.0 for Cloudflare Pages builds.
+    npm ci
+    cp .dev.vars.example .dev.vars
+    npm run migrate:local
+    npm run build
+    npm run dev:worker
 
-```bash
-npm ci
-npm run dev
-```
+Open http://localhost:8787. The local Worker uses a separate local D1 database in .wrangler and a localhost-only development identity. For hot reload, keep the Worker running in one terminal and run npm run dev in another; Vite proxies /api to port 8787.
 
-Open the local URL printed by Vite, usually `http://localhost:5173`.
+Run release checks:
 
-Run checks and preview the production output:
+    npm run lint
+    npm run typecheck
+    npm test
+    npm run build
+    npx wrangler deploy --dry-run
 
-```bash
-npm run lint
-npm run typecheck
-npm test
-npm run build
-npm run preview
-```
+## Deploy on Cloudflare for €0/month
 
-`dist/` is the complete static site. Meridian PNG icons are committed in `public/`; `scripts/generate-icons.swift` is the source for regenerating them on macOS. The PWA manifest and service worker are generated during the build.
+The repository is connected to the existing Cloudflare Worker named victor-os. Its Git integration uses the main branch, build command npm run build, and deploy command npx wrangler deploy. Pushing main triggers deployment. [wrangler.jsonc](wrangler.jsonc) configures static assets, the SPA fallback, API routing, and D1 binding.
 
-## Backups
+One-time setup for this account:
 
-**Export all data** downloads `victor-os-backup-YYYY-MM-DD.json`. It contains every table: projects, tasks, accounts, debts, investments, transactions, budgets, goals, prompts (including versions), cost models, notes, links, and settings.
+1. In Cloudflare D1, use the existing victor-os-data database. It was created with the EU jurisdiction. The committed Wrangler file contains its database ID. The records table and index have been created. For a new database or another account, create a D1 database, update its ID in wrangler.jsonc, then apply migrations with npx wrangler d1 migrations apply DB --remote.
+2. In Cloudflare Workers & Pages → victor-os → Settings → Variables and secrets, add ACCESS_KEY as an **encrypted secret** for Production. Use a random value of at least 32 characters from your password manager. Keep a copy in that password manager. Never add it as a plain-text variable or commit it.
+3. Push main (or allow the existing Git integration to deploy it). The wrangler.jsonc setting enables the production workers.dev route. Open the assigned HTTPS URL and enter the same access key.
+4. Open that URL on iPhone, MacBook, and Windows. Each browser signs in once per session; all records then come from the same D1 database.
 
-**Import data** checks JSON syntax, the `victor-os` format marker, schema version, all record structures, duplicate IDs, and saved link URLs. It then shows record counts and asks for the typed confirmation `RESTORE`. Import replaces the current database in one IndexedDB transaction. Export your current records first if you need them.
+Cloudflare Zero Trust Access was not used: its activation flow in this account requested a payment method and authorization for overage charges. The private Worker key avoids that requirement.
 
-**Reset database** asks for `RESET VICTOR OS`, deletes all records, and restores default preferences. Demo data does not reappear after clearing or resetting; it is seeded only in a new browser database.
+Cloudflare's published free allowances currently include [D1 storage and daily row operations](https://developers.cloudflare.com/d1/platform/pricing/) and [free Worker requests](https://developers.cloudflare.com/workers/platform/pricing/). The personal dashboard uses these free services and has no paid API or database. Free-tier limits can change, so review Cloudflare's current plan before adding heavy automated traffic.
 
-Backup schema version is currently `1`. A later app version should add an explicit migration before accepting another version.
+## Moving existing browser data
 
-## Deploy free on Cloudflare Pages
+IndexedDB belongs to a specific browser and URL origin. A new workers.dev URL cannot read data saved by localhost or another origin.
 
-This is a static Pages project with no Functions, D1, Workers, or paid services. Cloudflare says static asset requests are [free and unlimited](https://developers.cloudflare.com/pages/functions/pricing/) on free and paid plans; the current Free plan includes [500 builds per month](https://developers.cloudflare.com/pages/platform/limits/), well above ordinary personal development usage. Check Cloudflare’s current terms and limits if that changes.
+1. Open the previous local Victor OS version in the browser that contains your data.
+2. Go to Settings → Export all data and save the JSON file.
+3. Open the new cloud URL, sign in, then go to Settings → Import data.
+4. Review the record counts and confirm RESTORE. This replaces the cloud workspace, so export any new cloud records first.
+5. Reload on another browser and verify the same records appear before deleting any old local copy.
 
-1. The private [rlvphotoart/victor-os](https://github.com/rlvphotoart/victor-os) repository already contains the `main` branch. Create a free Cloudflare account if needed.
-2. In Cloudflare, open **Workers & Pages → Create application → Pages → Connect to Git** (sometimes labeled **Import an existing Git repository**). Authorize GitHub access to **only this repository** and select `rlvphotoart/victor-os`.
-3. Set **Production branch:** `main`; **Build command:** `npm run build`; **Build output directory:** `dist`; **Root directory:** `/` (repository root). No environment variables or paid plan are needed. `.node-version` selects Node 22.16.0.
-4. Choose **Save and Deploy**. Open the assigned `*.pages.dev` HTTPS URL. Every later push to `main` triggers a new deployment.
+If an earlier IndexedDB database exists on the **same origin** as the new app, Settings also offers Review browser data for a direct, previewed import. The old copy is preserved as a safety net.
 
-These values follow Cloudflare’s [React Pages guide](https://developers.cloudflare.com/pages/framework-guides/deploy-a-react-site/) and [Git integration guide](https://developers.cloudflare.com/pages/get-started/git-integration/). Cloudflare Pages automatically serves the root app for client-side routes when no top-level `404.html` exists, as documented under [SPA rendering](https://developers.cloudflare.com/pages/configuration/serving-pages/). The `public/_headers` file is copied into `dist/` and applied by Pages.
+## Backup and recovery
 
-The local repository already tracks `origin/main`. To publish future changes after committing them:
+Settings → Export all data downloads victor-os-backup-YYYY-MM-DD.json. It includes every record and setting, including prompt versions. Imports validate format, schema version, IDs, record structures, and links, show a preview, then require RESTORE. The replacement runs as one D1 transaction. Reset database requires RESET VICTOR OS and applies to every device. Clear demo data removes only marked example records.
 
-```bash
-git push origin main
-```
+Backups contain financial and other private information. Store them privately. D1 Time Travel may provide additional recovery, but regular JSON exports remain the portable backup.
 
-Do not commit personal backup files; they contain your local data. `.gitignore` excludes Victor OS backup exports and local environment files.
+## Install as a PWA
 
-## Install as an app
+- iPhone: open the HTTPS URL in Safari → Share → Add to Home Screen. Open from the new icon and sign in there if asked.
+- Mac or Windows: use the browser's Install app action.
 
-- **iPhone:** Open the deployed HTTPS URL in Safari → Share → **Add to Home Screen**. Launch Victor OS from the new icon for standalone display.
-- **Mac/Windows:** Open the deployed HTTPS URL in a browser that supports PWA installation and choose its **Install app** option.
+The app shell loads from the PWA cache after a successful visit. Reading or changing personal records requires a connection to D1.
 
-The service worker precaches the built application shell for repeat visits and offline use after the first successful load. Local records remain in IndexedDB. PWA installation and storage belong to the specific browser/origin, so keep the deployment URL stable.
+## Future improvements
 
-## Optional future cloud sync
-
-Sync is intentionally absent. A future Supabase Free Tier or Cloudflare D1 adapter could implement the repository operations, add identity and per-record conflict handling, and migrate local records after explicit user opt-in. This would change the privacy model, so keep local storage and backups available even if sync is added.
-
-## Project layout
-
-```text
-src/
-  components/     shell, command palette, UI primitives
-  data/           Dexie database, repository, demo seed, backup schema
-  lib/            finance calculations and browser utilities
-  pages/          dashboard and each module
-  types.ts        shared domain types
-public/           icons and Cloudflare Pages headers
-tests/            IndexedDB backup/restore safety test
-```
+The repository abstraction can later support multi-user accounts, passkeys, or an OAuth provider without rewriting page components. A per-record revision prevents silent same-record overwrites; collaborative editing and offline write queues are intentionally outside the scope of this private single-user version.

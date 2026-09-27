@@ -2651,6 +2651,63 @@ input[type="checkbox"] {
 .boot-error h1 {
   color: var(--text);
 }
+.auth-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(
+      circle at 50% 10%,
+      rgba(95, 172, 131, 0.12),
+      transparent 42%
+    ),
+    var(--bg);
+}
+.auth-card {
+  width: min(100%, 460px);
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+  padding: clamp(28px, 6vw, 44px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--panel);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.2);
+}
+.auth-card h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(29px, 7vw, 39px);
+  letter-spacing: -0.045em;
+}
+.auth-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.auth-form {
+  width: 100%;
+  display: grid;
+  gap: 13px;
+}
+.auth-form label {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+}
+.auth-form input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+}
+.auth-form .button {
+  min-height: 48px;
+}
 .more-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

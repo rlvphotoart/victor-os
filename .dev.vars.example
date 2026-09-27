@@ -1,0 +1,2 @@
+# Copy to .dev.vars for local Wrangler testing only. Never deploy DEV_OWNER.
+DEV_OWNER=local-test@example.invalid

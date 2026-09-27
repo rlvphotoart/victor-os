@@ -3,6 +3,11 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  server: {
+    proxy: {
+      "/api": "http://127.0.0.1:8787",
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -11,7 +16,7 @@ export default defineConfig({
       manifest: {
         name: "Victor OS — Personal Command Center",
         short_name: "Victor OS",
-        description: "A private, local-first personal command center.",
+        description: "A private personal command center with cloud sync.",
         theme_color: "#101713",
         background_color: "#101713",
         display: "standalone",
@@ -34,6 +39,7 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
       },
     }),

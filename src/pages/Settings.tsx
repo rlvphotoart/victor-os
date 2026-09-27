@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Check,
-  CloudOff,
+  Cloud,
   Download,
   FileJson,
   HardDrive,
+  LogOut,
   Moon,
   RotateCcw,
   ShieldCheck,
@@ -21,6 +22,8 @@ import {
   type BackupFile,
 } from "../data/backup";
 import { repository } from "../data/repository";
+import { legacyRepository } from "../data/localRepository";
+import { makeDemoData } from "../data/demo";
 import { downloadText, today } from "../lib/utils";
 import {
   Badge,
@@ -61,10 +64,14 @@ export function SettingsPage({ data }: { data: AppData }) {
   const settings = data.settings[0];
   const [name, setName] = useState(settings?.name ?? "Victor");
   const [preview, setPreview] = useState<BackupFile | null>(null);
-  const [importError, setImportError] = useState("");
-  const [confirm, setConfirm] = useState<"import" | "reset" | "demo" | null>(
-    null,
+  const [legacyData, setLegacyData] = useState<AppData | null>(null);
+  const [previewSource, setPreviewSource] = useState<"file" | "browser">(
+    "file",
   );
+  const [importError, setImportError] = useState("");
+  const [confirm, setConfirm] = useState<
+    "import" | "reset" | "demo" | "seed" | null
+  >(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const notify = useToast();
   const demoCount = Object.values(data)
@@ -80,6 +87,18 @@ export function SettingsPage({ data }: { data: AppData }) {
     (sum, value) => sum + value,
     0,
   );
+  useEffect(() => {
+    void legacyRepository
+      .snapshot()
+      .then((local) => {
+        const count = Object.values(backupCounts(local)).reduce(
+          (sum, value) => sum + value,
+          0,
+        );
+        if (local.settings.length && count) setLegacyData(local);
+      })
+      .catch(() => undefined);
+  }, []);
   const exportAll = () => {
     downloadText(
       `victor-os-backup-${today()}.json`,
@@ -97,6 +116,7 @@ export function SettingsPage({ data }: { data: AppData }) {
     }
     try {
       setPreview(parseBackup(await file.text()));
+      setPreviewSource("file");
     } catch (issue) {
       setImportError(
         issue instanceof Error ? issue.message : "Unable to read this backup.",
@@ -198,8 +218,37 @@ export function SettingsPage({ data }: { data: AppData }) {
           <CardHeader
             eyebrow="YOUR DATA"
             title="Backup & restore"
-            subtitle="Keep a copy somewhere you control. Backups include every project, task, finance record, prompt, note, link, and setting."
+            subtitle="Your live data is stored in Cloudflare D1. Export a separate copy you control."
           />
+          {legacyData && (
+            <div className="import-preview">
+              <div className="import-preview-head">
+                <HardDrive size={20} />
+                <div>
+                  <strong>Data found in this browser</strong>
+                  <small>
+                    The previous local version has{" "}
+                    {Object.values(backupCounts(legacyData)).reduce(
+                      (sum, count) => sum + count,
+                      0,
+                    )}{" "}
+                    records. Review them before moving them to the cloud.
+                  </small>
+                </div>
+                <Badge tone="amber">LOCAL COPY</Badge>
+              </div>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setPreview(makeBackup(legacyData));
+                  setPreviewSource("browser");
+                  setImportError("");
+                }}
+              >
+                Review browser data
+              </Button>
+            </div>
+          )}
           <div className="backup-actions">
             <Button onClick={exportAll}>
               <Download size={17} /> Export all data
@@ -241,7 +290,10 @@ export function SettingsPage({ data }: { data: AppData }) {
                   ),
                 )}
               </div>
-              <p>This will replace all current local data on this device.</p>
+              <p>
+                This will replace the current cloud data on every device. The
+                source copy remains available until you remove it.
+              </p>
               <div className="import-actions">
                 <Button variant="secondary" onClick={() => setPreview(null)}>
                   Cancel
@@ -271,12 +323,25 @@ export function SettingsPage({ data }: { data: AppData }) {
               <Trash2 size={16} /> Clear demo data
             </Button>
           </div>
+          {!recordCount && (
+            <div className="danger-actions">
+              <div>
+                <strong>Load demo data</strong>
+                <p>
+                  Add the marked example records to this empty cloud workspace.
+                </p>
+              </div>
+              <Button variant="secondary" onClick={() => setConfirm("seed")}>
+                Load demo data
+              </Button>
+            </div>
+          )}
           <div className="danger-actions">
             <div>
               <strong>Reset database</strong>
               <p>
-                Delete all records on this device and return preferences to
-                defaults.
+                Delete all cloud records on every device and return preferences
+                to defaults.
               </p>
             </div>
             <Button variant="danger" onClick={() => setConfirm("reset")}>
@@ -288,27 +353,44 @@ export function SettingsPage({ data }: { data: AppData }) {
       <aside className="settings-side">
         <Card className="privacy-card">
           <div className="privacy-icon">
-            <HardDrive size={23} />
+            <Cloud size={23} />
           </div>
           <Badge tone="green">
-            <span className="local-pulse" /> LOCAL DATA
+            <span className="local-pulse" /> CLOUD SYNC
           </Badge>
-          <h3>Private by default.</h3>
+          <h3>Available on your devices.</h3>
           <p>
-            Your information is stored in this browser’s IndexedDB. No account,
-            server, analytics, or cloud sync is used.
+            Records are stored in Cloudflare D1 and protected by your access
+            key. The database is restricted to the EU. No analytics or paid AI
+            API is used.
           </p>
           <div className="privacy-facts">
             <span>
-              <Check size={15} /> {recordCount} local records
+              <Check size={15} /> {recordCount} cloud records
             </span>
             <span>
-              <CloudOff size={15} /> No automatic uploads
+              <Cloud size={15} /> Refreshes when opened and every minute
             </span>
             <span>
               <ShieldCheck size={15} /> Backup is under your control
             </span>
           </div>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              void repository
+                .signOut()
+                .then(() => window.location.reload())
+                .catch((issue: unknown) =>
+                  notify(
+                    issue instanceof Error ? issue.message : "Sign out failed.",
+                    "error",
+                  ),
+                );
+            }}
+          >
+            <LogOut size={16} /> Sign out on this device
+          </Button>
         </Card>
         <Card className="install-card">
           <Smartphone size={22} />
@@ -323,7 +405,7 @@ export function SettingsPage({ data }: { data: AppData }) {
       {confirm === "import" && preview && (
         <ConfirmDialog
           title="Restore backup?"
-          message="All current local data on this device will be replaced by the previewed backup. Export your current data first if you need it."
+          message="All current cloud data on every device will be replaced by the previewed backup. Export the current cloud data first if you need it."
           phrase="RESTORE"
           confirmLabel="Restore data"
           onClose={() => setConfirm(null)}
@@ -331,14 +413,18 @@ export function SettingsPage({ data }: { data: AppData }) {
             await repository.replaceAll(preview.data);
             setPreview(null);
             setName(preview.data.settings[0].name);
-            notify("Backup restored");
+            notify(
+              previewSource === "browser"
+                ? "Browser data moved to cloud"
+                : "Cloud backup restored",
+            );
           }}
         />
       )}
       {confirm === "reset" && (
         <ConfirmDialog
           title="Reset Victor OS?"
-          message="Every project, task, money record, prompt, note, link, and setting on this device will be deleted. Export a backup first if you want to keep anything."
+          message="Every project, task, money record, prompt, note, link, and setting in the cloud will be deleted on every device. Export a backup first if you want to keep anything."
           phrase="RESET VICTOR OS"
           confirmLabel="Reset database"
           onClose={() => setConfirm(null)}
@@ -358,6 +444,19 @@ export function SettingsPage({ data }: { data: AppData }) {
           onConfirm={async () => {
             await repository.clearDemoData();
             notify("Demo data cleared");
+          }}
+        />
+      )}
+      {confirm === "seed" && (
+        <ConfirmDialog
+          title="Load demo data?"
+          message="Add marked example records to this empty cloud workspace."
+          confirmLabel="Load examples"
+          danger={false}
+          onClose={() => setConfirm(null)}
+          onConfirm={async () => {
+            await repository.replaceAll(makeDemoData());
+            notify("Demo data loaded");
           }}
         />
       )}

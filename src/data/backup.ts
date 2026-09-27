@@ -133,25 +133,45 @@ const settings = z.object({
   initialized: z.boolean(),
 });
 
+export const recordSchemas = {
+  projects: project,
+  tasks: task,
+  accounts: account,
+  debts: debt,
+  investments: investment,
+  transactions: transaction,
+  budgets: budget,
+  goals: goal,
+  prompts: prompt,
+  costModels: costModel,
+  notes: note,
+  links: link,
+  settings,
+} as const;
+
+export type CollectionName = keyof typeof recordSchemas;
+
+const dataSchema = z.object({
+  projects: z.array(project),
+  tasks: z.array(task),
+  accounts: z.array(account),
+  debts: z.array(debt),
+  investments: z.array(investment),
+  transactions: z.array(transaction),
+  budgets: z.array(budget),
+  goals: z.array(goal),
+  prompts: z.array(prompt),
+  costModels: z.array(costModel),
+  notes: z.array(note),
+  links: z.array(link),
+  settings: z.tuple([settings]),
+});
+
 const schema = z.object({
   format: z.literal("victor-os"),
   schemaVersion: z.literal(1),
   exportedAt: text,
-  data: z.object({
-    projects: z.array(project),
-    tasks: z.array(task),
-    accounts: z.array(account),
-    debts: z.array(debt),
-    investments: z.array(investment),
-    transactions: z.array(transaction),
-    budgets: z.array(budget),
-    goals: z.array(goal),
-    prompts: z.array(prompt),
-    costModels: z.array(costModel),
-    notes: z.array(note),
-    links: z.array(link),
-    settings: z.tuple([settings]),
-  }),
+  data: dataSchema,
 });
 
 export type BackupFile = {
@@ -184,8 +204,15 @@ export function parseBackup(json: string): BackupFile {
       `Backup validation failed at ${issue.path.join(".") || "root"}: ${issue.message}`,
     );
   }
-  const data = result.data.data;
-  for (const [name, rows] of Object.entries(data)) {
+  validateDataRelations(result.data.data);
+  return result.data as BackupFile;
+}
+
+function validateDataRelations(data: AppData) {
+  for (const [name, rows] of Object.entries(data) as [
+    string,
+    { id: string }[],
+  ][]) {
     const ids = rows.map((row) => row.id);
     if (new Set(ids).size !== ids.length)
       throw new Error(`Backup has duplicate IDs in ${name}.`);
@@ -210,7 +237,46 @@ export function parseBackup(json: string): BackupFile {
       }
     }
   }
-  return result.data as BackupFile;
+}
+
+export function parseAppData(input: unknown): AppData {
+  const result = dataSchema.safeParse(input);
+  if (!result.success) {
+    const issue = result.error.issues[0];
+    throw new Error(
+      `Data validation failed at ${issue.path.join(".") || "root"}: ${issue.message}`,
+    );
+  }
+  validateDataRelations(result.data);
+  return result.data;
+}
+
+export function parseRecord<C extends CollectionName>(
+  collection: C,
+  input: unknown,
+): AppData[C][number] {
+  const result = recordSchemas[collection].safeParse(input);
+  if (!result.success) {
+    const issue = result.error.issues[0];
+    throw new Error(
+      `Record validation failed at ${issue.path.join(".") || "root"}: ${issue.message}`,
+    );
+  }
+  if (collection === "links") validateUrl((result.data as { url: string }).url);
+  if (collection === "projects") {
+    for (const url of (result.data as { links: string[] }).links)
+      validateUrl(url);
+  }
+  return result.data as AppData[C][number];
+}
+
+function validateUrl(value: string) {
+  try {
+    if (["http:", "https:"].includes(new URL(value).protocol)) return;
+  } catch {
+    /* rejected below */
+  }
+  throw new Error("Record contains an invalid link URL.");
 }
 
 export function backupCounts(data: AppData) {

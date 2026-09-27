@@ -221,7 +221,7 @@ export function Shell({
               <b>{format(clock, "HH:mm")}</b>
             </span>
             <span className="vos-local-state">
-              <i aria-hidden="true" /> LOCAL
+              <i aria-hidden="true" /> CLOUD
             </span>
             <button
               className="vos-command-trigger"
@@ -331,9 +331,9 @@ export function MorePage() {
       ))}
       <div className="vos-more-local">
         <span className="vos-local-state">
-          <i /> LOCAL DATA
+          <i /> CLOUD DATA
         </span>
-        <span>Stored on this device</span>
+        <span>Available across your browsers</span>
       </div>
     </div>
   );

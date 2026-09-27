@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { afterAll, describe, expect, it } from "vitest";
 import { db } from "../src/data/db";
-import { repository } from "../src/data/repository";
+import { legacyRepository as repository } from "../src/data/localRepository";
 import { makeBackup, parseBackup } from "../src/data/backup";
 import { uid } from "../src/lib/utils";
 

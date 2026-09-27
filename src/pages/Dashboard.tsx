@@ -385,7 +385,7 @@ export function DashboardPage({ data }: { data: AppData }) {
       )}
       <footer className="vos-home-footer">
         <span>V/OS · PERSONAL SYSTEM</span>
-        <span>PRIVATE BY DESIGN / STORED HERE</span>
+        <span>PRIVATE BY DESIGN / CLOUD SYNCED</span>
       </footer>
     </div>
   );

@@ -459,7 +459,7 @@ export function TasksPage({ data }: { data: AppData }) {
       {deleteId && (
         <ConfirmDialog
           title="Delete task?"
-          message="This task will be removed from this device."
+          message="This task will be removed from the cloud on every device."
           confirmLabel="Delete task"
           onClose={() => setDeleteId(null)}
           onConfirm={async () => {

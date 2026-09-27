@@ -1,6 +1,10 @@
 import { addDays, format, subMonths } from "date-fns";
 import type { AppData, Task } from "../types";
-import { monthKey, nowISO, today, uid } from "../lib/utils";
+
+const uid = () => crypto.randomUUID();
+const nowISO = () => new Date().toISOString();
+const today = () => format(new Date(), "yyyy-MM-dd");
+const monthKey = (date = new Date()) => format(date, "yyyy-MM");
 
 export function makeDemoData(): AppData {
   const createdAt = nowISO();

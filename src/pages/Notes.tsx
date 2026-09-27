@@ -224,7 +224,7 @@ function NoteEditor({ note, onClose }: { note: Note; onClose: () => void }) {
     >
       <form className="form-stack note-editor" onSubmit={submit}>
         <div className="note-editor-bar">
-          <span>{state === "saving" ? "Saving…" : "Saved locally"}</span>
+          <span>{state === "saving" ? "Saving…" : "Saved to cloud"}</span>
           <button
             type="button"
             className={pinned ? "text-accent" : ""}

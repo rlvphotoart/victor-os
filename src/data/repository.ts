@@ -1,186 +1,243 @@
-import type { Table } from "dexie";
-import { db } from "./db";
-import { makeDemoData } from "./demo";
+import { parseAppData, parseRecord, type CollectionName } from "./backup";
 import type { AppData, AppSettings } from "../types";
 
-function collection<T extends { id: string }>(table: Table<T, string>) {
+const defaultSettings: AppSettings = {
+  id: "app",
+  name: "Victor",
+  theme: "dark",
+  currency: "EUR",
+  widgets: ["daily", "finance", "projects", "quickLinks"],
+  initialized: true,
+};
+
+export function emptyData(): AppData {
   return {
-    list: () => table.toArray(),
-    get: (id: string) => table.get(id),
-    save: (value: T) => table.put(value),
-    remove: (id: string) => table.delete(id),
+    projects: [],
+    tasks: [],
+    accounts: [],
+    debts: [],
+    investments: [],
+    transactions: [],
+    budgets: [],
+    goals: [],
+    prompts: [],
+    costModels: [],
+    notes: [],
+    links: [],
+    settings: [defaultSettings],
   };
 }
 
-const dataTables = [
-  db.projects,
-  db.tasks,
-  db.accounts,
-  db.debts,
-  db.investments,
-  db.transactions,
-  db.budgets,
-  db.goals,
-  db.prompts,
-  db.costModels,
-  db.notes,
-  db.links,
-] as const;
+type RevisionMap = Record<string, number>;
+type SnapshotResponse = { data: AppData; revisions: RevisionMap };
+
+export class RepositoryError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "RepositoryError";
+  }
+}
+
+let current: AppData = { ...emptyData(), settings: [] };
+let revisions: RevisionMap = {};
+let operationQueue: Promise<unknown> = Promise.resolve();
+const listeners = new Set<() => void>();
+
+function publish(data: AppData) {
+  current = data;
+  listeners.forEach((listener) => listener());
+}
+
+function enqueue<T>(operation: () => Promise<T>): Promise<T> {
+  const result = operationQueue.then(operation, operation);
+  operationQueue = result.catch(() => undefined);
+  return result;
+}
+
+function key(collection: CollectionName, id: string) {
+  return collection + ":" + id;
+}
+
+async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      ...init,
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        ...(init.body
+          ? { "Content-Type": "application/json", "X-Victor-Request": "1" }
+          : {}),
+        ...init.headers,
+      },
+    });
+  } catch {
+    throw new RepositoryError(
+      "Cloud connection unavailable. Check your internet connection and retry.",
+      0,
+    );
+  }
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new RepositoryError(
+      "Cloud session unavailable. Reload Victor OS and sign in again.",
+      response.status,
+    );
+  }
+  const body = (await response.json()) as T & { error?: string };
+  if (!response.ok) {
+    throw new RepositoryError(
+      body.error ?? "Cloud request failed (" + response.status + ").",
+      response.status,
+    );
+  }
+  return body;
+}
+
+async function load(): Promise<AppData> {
+  const response = await api<SnapshotResponse>("/api/data");
+  const data = parseAppData(response.data);
+  revisions = response.revisions;
+  publish(data);
+  return data;
+}
+
+async function putRecord<C extends CollectionName>(
+  collection: C,
+  input: AppData[C][number],
+) {
+  const value = parseRecord(collection, input);
+  const recordKey = key(collection, value.id);
+  const result = await api<{ revision: number }>(
+    "/api/records/" + collection + "/" + encodeURIComponent(value.id),
+    {
+      method: "PUT",
+      body: JSON.stringify({ value, revision: revisions[recordKey] ?? 0 }),
+    },
+  ).catch(async (issue: unknown) => {
+    if (issue instanceof RepositoryError && issue.status === 409) await load();
+    throw issue;
+  });
+  revisions = { ...revisions, [recordKey]: result.revision };
+  const rows = current[collection] as Array<{ id: string }>;
+  publish({
+    ...current,
+    [collection]: [...rows.filter((row) => row.id !== value.id), value],
+  });
+  return value;
+}
+
+async function deleteRecord<C extends CollectionName>(
+  collection: C,
+  id: string,
+) {
+  const recordKey = key(collection, id);
+  await api<{ ok: true }>(
+    "/api/records/" + collection + "/" + encodeURIComponent(id),
+    {
+      method: "DELETE",
+      body: JSON.stringify({ revision: revisions[recordKey] ?? 0 }),
+    },
+  ).catch(async (issue: unknown) => {
+    if (issue instanceof RepositoryError && issue.status === 409) await load();
+    throw issue;
+  });
+  const nextRevisions = { ...revisions };
+  delete nextRevisions[recordKey];
+  revisions = nextRevisions;
+  publish({
+    ...current,
+    [collection]: (current[collection] as Array<{ id: string }>).filter(
+      (row) => row.id !== id,
+    ),
+  });
+}
+
+function collection<C extends Exclude<CollectionName, "settings">>(name: C) {
+  return {
+    list: async () => current[name],
+    get: async (id: string) => current[name].find((row) => row.id === id),
+    save: (value: AppData[C][number]) => enqueue(() => putRecord(name, value)),
+    remove: (id: string) => enqueue(() => deleteRecord(name, id)),
+  };
+}
 
 export const repository = {
-  projects: collection(db.projects),
-  tasks: collection(db.tasks),
-  accounts: collection(db.accounts),
-  debts: collection(db.debts),
-  investments: collection(db.investments),
-  transactions: collection(db.transactions),
-  budgets: collection(db.budgets),
-  goals: collection(db.goals),
-  prompts: collection(db.prompts),
-  costModels: collection(db.costModels),
-  notes: collection(db.notes),
-  links: collection(db.links),
+  projects: collection("projects"),
+  tasks: collection("tasks"),
+  accounts: collection("accounts"),
+  debts: collection("debts"),
+  investments: collection("investments"),
+  transactions: collection("transactions"),
+  budgets: collection("budgets"),
+  goals: collection("goals"),
+  prompts: collection("prompts"),
+  costModels: collection("costModels"),
+  notes: collection("notes"),
+  links: collection("links"),
 
-  async initialize() {
-    await db.transaction("rw", [...dataTables, db.settings], async () => {
-      if (await db.settings.get("app")) return;
-      const demo = makeDemoData();
-      await Promise.all([
-        db.projects.bulkPut(demo.projects),
-        db.tasks.bulkPut(demo.tasks),
-        db.accounts.bulkPut(demo.accounts),
-        db.debts.bulkPut(demo.debts),
-        db.investments.bulkPut(demo.investments),
-        db.transactions.bulkPut(demo.transactions),
-        db.budgets.bulkPut(demo.budgets),
-        db.goals.bulkPut(demo.goals),
-        db.prompts.bulkPut(demo.prompts),
-        db.costModels.bulkPut(demo.costModels),
-        db.notes.bulkPut(demo.notes),
-        db.links.bulkPut(demo.links),
-        db.settings.bulkPut(demo.settings),
-      ]);
+  subscribe(listener: () => void) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  },
+  getSnapshot: () => current,
+  snapshot: async () => current,
+  initialize: () => enqueue(load),
+  refresh: () => enqueue(load),
+  signIn(key: string) {
+    return enqueue(async () => {
+      await api<{ ok: true }>("/api/login", {
+        method: "POST",
+        body: JSON.stringify({ key }),
+      });
+      await load();
+    });
+  },
+  signOut() {
+    return enqueue(async () => {
+      await api<{ ok: true }>("/api/logout", { method: "POST", body: "{}" });
+      revisions = {};
+      publish({ ...emptyData(), settings: [] });
     });
   },
 
-  async snapshot(): Promise<AppData> {
-    const [
-      projects,
-      tasks,
-      accounts,
-      debts,
-      investments,
-      transactions,
-      budgets,
-      goals,
-      prompts,
-      costModels,
-      notes,
-      links,
-      settings,
-    ] = await Promise.all([
-      db.projects.toArray(),
-      db.tasks.toArray(),
-      db.accounts.toArray(),
-      db.debts.toArray(),
-      db.investments.toArray(),
-      db.transactions.toArray(),
-      db.budgets.toArray(),
-      db.goals.toArray(),
-      db.prompts.toArray(),
-      db.costModels.toArray(),
-      db.notes.toArray(),
-      db.links.toArray(),
-      db.settings.toArray(),
-    ]);
-    return {
-      projects,
-      tasks,
-      accounts,
-      debts,
-      investments,
-      transactions,
-      budgets,
-      goals,
-      prompts,
-      costModels,
-      notes,
-      links,
-      settings,
-    };
+  saveSettings(changes: Partial<Omit<AppSettings, "id">>) {
+    return enqueue(() =>
+      putRecord("settings", {
+        ...defaultSettings,
+        ...current.settings[0],
+        ...changes,
+      }),
+    );
   },
 
-  async saveSettings(changes: Partial<Omit<AppSettings, "id">>) {
-    const current = await db.settings.get("app");
-    await db.settings.put({
-      id: "app",
-      name: "Victor",
-      theme: "dark",
-      currency: "EUR",
-      widgets: ["daily", "finance", "projects", "quickLinks"],
-      initialized: true,
-      ...current,
-      ...changes,
+  clearDemoData() {
+    return enqueue(async () => {
+      await api<{ ok: true }>("/api/clear-demo", {
+        method: "POST",
+        body: "{}",
+      });
+      await load();
     });
   },
 
-  async clearDemoData() {
-    await db.transaction("rw", dataTables, async () => {
-      for (const table of dataTables) {
-        const rows = await table.toArray();
-        await table.bulkDelete(
-          rows.filter((row) => row.demo).map((row) => row.id),
-        );
-      }
+  replaceAll(input: AppData) {
+    return enqueue(async () => {
+      const data = parseAppData(input);
+      await api<{ ok: true }>("/api/replace", {
+        method: "POST",
+        body: JSON.stringify({ data }),
+      });
+      await load();
     });
   },
 
-  async replaceAll(data: AppData) {
-    await db.transaction("rw", [...dataTables, db.settings], async () => {
-      for (const table of [...dataTables, db.settings]) await table.clear();
-      await Promise.all([
-        db.projects.bulkPut(data.projects),
-        db.tasks.bulkPut(data.tasks),
-        db.accounts.bulkPut(data.accounts),
-        db.debts.bulkPut(data.debts),
-        db.investments.bulkPut(data.investments),
-        db.transactions.bulkPut(data.transactions),
-        db.budgets.bulkPut(data.budgets),
-        db.goals.bulkPut(data.goals),
-        db.prompts.bulkPut(data.prompts),
-        db.costModels.bulkPut(data.costModels),
-        db.notes.bulkPut(data.notes),
-        db.links.bulkPut(data.links),
-        db.settings.bulkPut(data.settings),
-      ]);
-    });
-  },
-
-  async reset() {
-    const empty: AppData = {
-      projects: [],
-      tasks: [],
-      accounts: [],
-      debts: [],
-      investments: [],
-      transactions: [],
-      budgets: [],
-      goals: [],
-      prompts: [],
-      costModels: [],
-      notes: [],
-      links: [],
-      settings: [
-        {
-          id: "app",
-          name: "Victor",
-          theme: "dark",
-          currency: "EUR",
-          widgets: ["daily", "finance", "projects", "quickLinks"],
-          initialized: true,
-        },
-      ],
-    };
-    await this.replaceAll(empty);
+  reset() {
+    return this.replaceAll(emptyData());
   },
 };
