@@ -4,6 +4,7 @@ import {
   Check,
   ChevronDown,
   Copy,
+  ExternalLink,
   Heart,
   History,
   Plus,
@@ -13,7 +14,7 @@ import {
 } from "lucide-react";
 import type { AppData, CostModel, Prompt } from "../types";
 import { repository } from "../data/repository";
-import { copyText, dateLabel, nowISO, tagList, uid } from "../lib/utils";
+import { copyText, dateLabel, nowISO, tagList, today, uid } from "../lib/utils";
 import {
   Badge,
   Button,
@@ -505,6 +506,8 @@ function PromptForm({
 
 function CostCalculator({ data }: { data: AppData }) {
   const [selectedId, setSelectedId] = useState(data.costModels[0]?.id ?? "");
+  const [query, setQuery] = useState("");
+  const [provider, setProvider] = useState("all");
   const [inputTokens, setInputTokens] = useState(100000);
   const [outputTokens, setOutputTokens] = useState(25000);
   const [runsPerDay, setRunsPerDay] = useState(1);
@@ -514,14 +517,27 @@ function CostCalculator({ data }: { data: AppData }) {
   const selected =
     data.costModels.find((item) => item.id === selectedId) ??
     data.costModels[0];
+  const priced = (model: CostModel) =>
+    model.inputPrice !== null && model.outputPrice !== null;
   const perRun = (model: CostModel) =>
-    (inputTokens / 1_000_000) * model.inputPrice +
-    (outputTokens / 1_000_000) * model.outputPrice;
-  const currency = data.settings[0]?.currency ?? "EUR";
+    model.inputPrice === null || model.outputPrice === null
+      ? null
+      : (inputTokens / 1_000_000) * model.inputPrice +
+        (outputTokens / 1_000_000) * model.outputPrice;
+  const providers = [
+    ...new Set(data.costModels.map((item) => item.provider)),
+  ].sort();
+  const visible = data.costModels.filter(
+    (item) =>
+      (provider === "all" || item.provider === provider) &&
+      `${item.provider} ${item.model} ${item.pricingNote ?? ""}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
   const cost = (value: number) =>
     new Intl.NumberFormat("en-IE", {
       style: "currency",
-      currency,
+      currency: "USD",
       minimumFractionDigits: 2,
       maximumFractionDigits: 4,
     }).format(value);
@@ -531,7 +547,7 @@ function CostCalculator({ data }: { data: AppData }) {
         <CardHeader
           eyebrow="YOUR RATES"
           title="Model cost calculator"
-          subtitle="Rates are manually entered and can change. Enter the current price per million tokens for each model."
+          subtitle="Dated direct API text-token rates in USD. All rates are editable; verify the source before budgeting."
           action={
             <Button onClick={() => setEditing("new")}>
               <Plus size={16} /> Add model
@@ -589,24 +605,55 @@ function CostCalculator({ data }: { data: AppData }) {
         <div className="cost-results">
           <div>
             <span>EST. COST / RUN</span>
-            <strong>{cost(selected ? perRun(selected) : 0)}</strong>
+            <strong>
+              {selected && priced(selected) ? cost(perRun(selected)!) : "N/A"}
+            </strong>
           </div>
           <div>
             <span>EST. COST / DAY</span>
             <strong>
-              {cost(selected ? perRun(selected) * runsPerDay : 0)}
+              {selected && priced(selected)
+                ? cost(perRun(selected)! * runsPerDay)
+                : "N/A"}
             </strong>
           </div>
           <div>
             <span>EST. COST / MONTH</span>
             <strong>
-              {cost(selected ? perRun(selected) * runsPerDay * 30 : 0)}
+              {selected && priced(selected)
+                ? cost(perRun(selected)! * runsPerDay * 30)
+                : "N/A"}
             </strong>
           </div>
         </div>
       </Card>
       <Card>
-        <CardHeader eyebrow="SIDE BY SIDE" title="Compare models" />
+        <CardHeader
+          eyebrow="SIDE BY SIDE"
+          title="Compare models"
+          subtitle={`${data.costModels.filter(priced).length} priced models · ${data.costModels.length - data.costModels.filter(priced).length} agent platforms without a universal token rate`}
+        />
+        <div className="filter-row model-filter-row">
+          <div className="filter-search">
+            <Search size={16} />
+            <input
+              aria-label="Search model prices"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search models or providers"
+            />
+          </div>
+          <Select
+            aria-label="Filter model provider"
+            value={provider}
+            onChange={(event) => setProvider(event.target.value)}
+          >
+            <option value="all">All providers</option>
+            {providers.map((item) => (
+              <option key={item}>{item}</option>
+            ))}
+          </Select>
+        </div>
         <div className="comparison-table">
           <div className="comparison-head">
             <span>MODEL</span>
@@ -616,18 +663,50 @@ function CostCalculator({ data }: { data: AppData }) {
             <span>PER MONTH</span>
             <span>ACTIONS</span>
           </div>
-          {data.costModels.map((item) => (
+          {visible.map((item) => (
             <div key={item.id} className="comparison-row">
               <span>
                 <strong>
                   {item.model} <DemoTag demo={item.demo} />
                 </strong>
-                <small>{item.provider}</small>
+                <small>
+                  {item.provider}
+                  {item.checkedAt
+                    ? ` · checked ${item.checkedAt}`
+                    : " · custom rate"}
+                </small>
+                {item.pricingNote && (
+                  <small className="model-pricing-note">
+                    {item.pricingNote}
+                  </small>
+                )}
+                {item.sourceUrl && (
+                  <a
+                    className="model-source"
+                    href={item.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Official source <ExternalLink size={12} />
+                  </a>
+                )}
               </span>
-              <span>{cost(item.inputPrice)}</span>
-              <span>{cost(item.outputPrice)}</span>
-              <span>{cost(perRun(item))}</span>
-              <strong>{cost(perRun(item) * runsPerDay * 30)}</strong>
+              <span>
+                {item.inputPrice === null ? "—" : cost(item.inputPrice)}
+              </span>
+              <span>
+                {item.outputPrice === null ? "—" : cost(item.outputPrice)}
+              </span>
+              <span>
+                {perRun(item) === null
+                  ? "Depends on model"
+                  : cost(perRun(item)!)}
+              </span>
+              <strong>
+                {perRun(item) === null
+                  ? "—"
+                  : cost(perRun(item)! * runsPerDay * 30)}
+              </strong>
               <span className="row-actions">
                 <IconButton
                   label={`Edit ${item.model}`}
@@ -644,17 +723,18 @@ function CostCalculator({ data }: { data: AppData }) {
               </span>
             </div>
           ))}
-          {!data.costModels.length && (
+          {!visible.length && (
             <EmptyState
-              title="No models yet"
-              text="Add a provider and its current rates to start comparing."
+              title="No models found"
+              text="Adjust your search or add a provider and its current rates."
             />
           )}
         </div>
       </Card>
       <p className="helper-line">
-        <Check size={14} /> Cost is an estimate using the rates you enter;
-        monthly cost assumes 30 days.
+        <Check size={14} /> Estimates use standard, uncached text rates and 30
+        days. Long context, caching, tools, taxes, regional fees, subscriptions,
+        and price changes are excluded.
       </p>
       {editing && (
         <ModelForm
@@ -693,8 +773,11 @@ function ModelForm({
       model: "",
       inputPrice: 0,
       outputPrice: 0,
+      sourceUrl: "",
+      pricingNote: "",
     },
   );
+  const [unpriced, setUnpriced] = useState(form.inputPrice === null);
   const notify = useToast();
   const save = async (event: FormEvent) => {
     event.preventDefault();
@@ -702,6 +785,11 @@ function ModelForm({
       ...form,
       provider: form.provider.trim(),
       model: form.model.trim(),
+      inputPrice: unpriced ? null : form.inputPrice,
+      outputPrice: unpriced ? null : form.outputPrice,
+      sourceUrl: form.sourceUrl?.trim() || undefined,
+      pricingNote: form.pricingNote?.trim() || undefined,
+      checkedAt: today(),
     });
     notify("Model rates saved");
     onClose();
@@ -737,11 +825,12 @@ function ModelForm({
         <div className="form-grid">
           <Field label="Input price / million tokens">
             <Input
-              required
+              required={!unpriced}
+              disabled={unpriced}
               type="number"
               min="0"
               step="0.0001"
-              value={form.inputPrice}
+              value={form.inputPrice ?? ""}
               onChange={(event) =>
                 setForm({ ...form, inputPrice: Number(event.target.value) })
               }
@@ -749,20 +838,49 @@ function ModelForm({
           </Field>
           <Field label="Output price / million tokens">
             <Input
-              required
+              required={!unpriced}
+              disabled={unpriced}
               type="number"
               min="0"
               step="0.0001"
-              value={form.outputPrice}
+              value={form.outputPrice ?? ""}
               onChange={(event) =>
                 setForm({ ...form, outputPrice: Number(event.target.value) })
               }
             />
           </Field>
         </div>
+        <label className="check-label">
+          <input
+            type="checkbox"
+            checked={unpriced}
+            onChange={(event) => setUnpriced(event.target.checked)}
+          />{" "}
+          No universal token rate (agent platform or variable provider)
+        </label>
+        <Field label="Official source URL">
+          <Input
+            type="url"
+            value={form.sourceUrl ?? ""}
+            onChange={(event) =>
+              setForm({ ...form, sourceUrl: event.target.value })
+            }
+            placeholder="https://provider.example/pricing"
+          />
+        </Field>
+        <Field label="Pricing note">
+          <Textarea
+            rows={3}
+            value={form.pricingNote ?? ""}
+            onChange={(event) =>
+              setForm({ ...form, pricingNote: event.target.value })
+            }
+            placeholder="Long-context thresholds, promotional expiry, or why no rate exists"
+          />
+        </Field>
         <p className="muted text-sm">
-          Enter current rates in your selected currency. Check your provider for
-          updates.
+          Enter USD rates for standard direct API text tokens. Check the
+          provider for updates.
         </p>
         <div className="modal-actions">
           <Button type="button" variant="secondary" onClick={onClose}>

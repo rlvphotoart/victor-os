@@ -12,6 +12,7 @@ import {
   Sun,
   Trash2,
   Upload,
+  WandSparkles,
 } from "lucide-react";
 import type { AppData, WidgetId } from "../types";
 import {
@@ -23,6 +24,12 @@ import {
 } from "../data/backup";
 import { repository } from "../data/repository";
 import { makeDemoData } from "../data/demo";
+import {
+  curatedCostModels,
+  curatedPlaybooks,
+  curatedProjects,
+  curatedPrompts,
+} from "../data/workspace";
 import { downloadText, today } from "../lib/utils";
 import {
   Badge,
@@ -54,8 +61,8 @@ const widgetOptions: { id: WidgetId; label: string; description: string }[] = [
   },
   {
     id: "quickLinks",
-    label: "Quick links",
-    description: "Your most used destinations",
+    label: "Quick access",
+    description: "Your repeatable playbooks",
   },
 ];
 
@@ -64,12 +71,21 @@ export function SettingsPage({ data }: { data: AppData }) {
   const [name, setName] = useState(settings?.name ?? "Victor");
   const [preview, setPreview] = useState<BackupFile | null>(null);
   const [importError, setImportError] = useState("");
+  const [personalizing, setPersonalizing] = useState(false);
   const [confirm, setConfirm] = useState<
     "import" | "reset" | "demo" | "seed" | null
   >(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const notify = useToast();
-  const demoCount = Object.values(data)
+  const demoCount = [
+    "projects",
+    "tasks",
+    "prompts",
+    "costModels",
+    "links",
+    "playbooks",
+  ]
+    .flatMap((name) => data[name as keyof AppData] as Array<{ demo?: boolean }>)
     .flat()
     .filter(
       (row: unknown) =>
@@ -78,6 +94,19 @@ export function SettingsPage({ data }: { data: AppData }) {
         "demo" in row &&
         row.demo === true,
     ).length;
+  const showSetup =
+    curatedProjects.some(
+      (row) => !data.projects.some((item) => item.id === row.id),
+    ) ||
+    curatedPrompts.some(
+      (row) => !data.prompts.some((item) => item.id === row.id),
+    ) ||
+    curatedCostModels.some(
+      (row) => !data.costModels.some((item) => item.id === row.id),
+    ) ||
+    curatedPlaybooks.some(
+      (row) => !data.playbooks.some((item) => item.id === row.id),
+    );
   const recordCount = Object.values(backupCounts(data)).reduce(
     (sum, value) => sum + value,
     0,
@@ -117,6 +146,46 @@ export function SettingsPage({ data }: { data: AppData }) {
   return (
     <div className="settings-layout">
       <div className="settings-main">
+        {showSetup && (
+          <Card className="workspace-setup-card">
+            <CardHeader
+              eyebrow="PERSONAL WORKSPACE"
+              title="Make Victor OS yours"
+              subtitle={`Add ${curatedProjects.length} relevant projects, six Sunday tasks, ${curatedPrompts.length} reusable prompts, ${curatedCostModels.length} researched model entries, and ${curatedPlaybooks.length} playbooks.`}
+            />
+            <p className="helper-line">
+              A dated backup downloads first. Existing personal records remain;
+              marked examples outside Money and Notes are removed. Money and
+              Notes data are untouched.
+            </p>
+            <Button
+              disabled={personalizing}
+              onClick={async () => {
+                setPersonalizing(true);
+                downloadText(
+                  `victor-os-before-personalize-${today()}.json`,
+                  JSON.stringify(makeBackup(data), null, 2),
+                );
+                try {
+                  await repository.personalizeWorkspace();
+                  notify("Workspace personalized and synced");
+                } catch (issue) {
+                  notify(
+                    issue instanceof Error
+                      ? issue.message
+                      : "Could not personalize workspace",
+                    "error",
+                  );
+                } finally {
+                  setPersonalizing(false);
+                }
+              }}
+            >
+              <WandSparkles size={16} />{" "}
+              {personalizing ? "Personalizing…" : "Apply personal workspace"}
+            </Button>
+          </Card>
+        )}
         <Card>
           <CardHeader eyebrow="IDENTITY" title="Your workspace" />
           <div className="settings-fields">
@@ -262,10 +331,11 @@ export function SettingsPage({ data }: { data: AppData }) {
           <CardHeader eyebrow="MAINTENANCE" title="Data controls" />
           <div className="danger-actions">
             <div>
-              <strong>Clear demo data</strong>
+              <strong>Clear demo outside Money & Notes</strong>
               <p>
-                Remove {demoCount} example records marked DEMO. Your own records
-                stay.
+                Remove {demoCount} example records marked DEMO in Projects,
+                Tasks, AI Lab, and legacy Links. Money and Notes stay as they
+                are.
               </p>
             </div>
             <Button
@@ -273,7 +343,7 @@ export function SettingsPage({ data }: { data: AppData }) {
               disabled={!demoCount}
               onClick={() => setConfirm("demo")}
             >
-              <Trash2 size={16} /> Clear demo data
+              <Trash2 size={16} /> Clear nonfinancial demo
             </Button>
           </div>
           {!recordCount && (
@@ -386,8 +456,8 @@ export function SettingsPage({ data }: { data: AppData }) {
       )}
       {confirm === "demo" && (
         <ConfirmDialog
-          title="Clear demo data?"
-          message={`This removes ${demoCount} records marked DEMO. Edited examples still marked DEMO will also be removed.`}
+          title="Clear nonfinancial demo?"
+          message={`This removes ${demoCount} example records outside Money and Notes. Finance and notes records remain untouched.`}
           confirmLabel="Clear demo data"
           onClose={() => setConfirm(null)}
           onConfirm={async () => {

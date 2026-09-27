@@ -1,10 +1,15 @@
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
-import { ArrowRight, ArrowUpRight, Command, Plus } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BookOpenCheck,
+  Command,
+  Plus,
+} from "lucide-react";
 import type { AppData } from "../types";
 import { financeSummary } from "../lib/finance";
-import { dateLabel, money, safeUrl, today } from "../lib/utils";
-import { linkIcon } from "../lib/linkIcon";
+import { dateLabel, money, today } from "../lib/utils";
 import { Datum, Metric, StatusSignal } from "../components/OS";
 import { DemoTag } from "../components/ui";
 
@@ -349,34 +354,25 @@ export function DashboardPage({ data }: { data: AppData }) {
             number="04"
             label="QUICK ACCESS"
             action={
-              <Link to="/links">
-                Manage links <ArrowRight size={14} />
+              <Link to="/playbooks">
+                Open playbooks <ArrowRight size={14} />
               </Link>
             }
           />
           <div className="vos-home-links-list">
-            {[...data.links]
-              .filter((item) => safeUrl(item.url))
-              .sort((a, b) => a.order - b.order)
+            {[...data.playbooks]
+              .sort((a, b) => a.title.localeCompare(b.title))
               .slice(0, 6)
-              .map((item) => {
-                const Icon = linkIcon(item.icon);
-                return (
-                  <a
-                    key={item.id}
-                    href={safeUrl(item.url)!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Icon size={17} strokeWidth={1.6} />
-                    <span>{item.name}</span>
-                    <ArrowUpRight size={15} />
-                  </a>
-                );
-              })}
-            {!data.links.length && (
-              <Link to="/links">
-                Add your first link <Plus size={16} />
+              .map((item) => (
+                  <Link key={item.id} to={`/playbooks#${item.id}`}>
+                  <BookOpenCheck size={17} strokeWidth={1.6} />
+                  <span>{item.title}</span>
+                  <ArrowUpRight size={15} />
+                </Link>
+              ))}
+            {!data.playbooks.length && (
+              <Link to="/playbooks?new=1">
+                Add your first playbook <Plus size={16} />
               </Link>
             )}
           </div>

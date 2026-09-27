@@ -98,8 +98,11 @@ export interface CostModel {
   id: string;
   provider: string;
   model: string;
-  inputPrice: number;
-  outputPrice: number;
+  inputPrice: number | null;
+  outputPrice: number | null;
+  sourceUrl?: string;
+  checkedAt?: string;
+  pricingNote?: string;
   demo?: boolean;
 }
 export interface Note {
@@ -119,6 +122,20 @@ export interface QuickLink {
   category: string;
   icon: string;
   order: number;
+  demo?: boolean;
+}
+export interface PlaybookStep {
+  id: string;
+  title: string;
+  done: boolean;
+}
+export interface Playbook {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  steps: PlaybookStep[];
+  updatedAt: string;
   demo?: boolean;
 }
 export type WidgetId = "daily" | "finance" | "projects" | "quickLinks";
@@ -155,6 +172,7 @@ export interface AppData {
   costModels: CostModel[];
   notes: Note[];
   links: QuickLink[];
+  playbooks: Playbook[];
   settings: AppSettings[];
 }
 
@@ -223,5 +241,10 @@ export const TOOLS = [
     id: "tokens",
     name: "Token Estimate",
     description: "Approximate token usage",
+  },
+  {
+    id: "coverage",
+    name: "Coverage Reconciler",
+    description: "Compare requirement and test ID lists locally",
   },
 ] as const;

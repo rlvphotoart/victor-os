@@ -103,8 +103,11 @@ const costModel = z.object({
   id,
   provider: text,
   model: text,
-  inputPrice: amount,
-  outputPrice: amount,
+  inputPrice: amount.nullable(),
+  outputPrice: amount.nullable(),
+  sourceUrl: text.optional(),
+  checkedAt: text.optional(),
+  pricingNote: text.optional(),
   ...demo,
 });
 const note = z.object({
@@ -124,6 +127,20 @@ const link = z.object({
   category: text,
   icon: text,
   order: amount,
+  ...demo,
+});
+const playbookStep = z.object({
+  id,
+  title: text,
+  done: z.boolean(),
+});
+const playbook = z.object({
+  id,
+  title: text,
+  description: text,
+  category: text,
+  steps: z.array(playbookStep),
+  updatedAt: text,
   ...demo,
 });
 const recentContext = z.object({
@@ -160,6 +177,7 @@ export const recordSchemas = {
   costModels: costModel,
   notes: note,
   links: link,
+  playbooks: playbook,
   settings,
 } as const;
 
@@ -178,19 +196,20 @@ const dataSchema = z.object({
   costModels: z.array(costModel),
   notes: z.array(note),
   links: z.array(link),
+  playbooks: z.array(playbook).default([]),
   settings: z.tuple([settings]),
 });
 
 const schema = z.object({
   format: z.literal("victor-os"),
-  schemaVersion: z.literal(1),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]),
   exportedAt: text,
   data: dataSchema,
 });
 
 export type BackupFile = {
   format: "victor-os";
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   exportedAt: string;
   data: AppData;
 };
@@ -198,7 +217,7 @@ export type BackupFile = {
 export function makeBackup(data: AppData): BackupFile {
   return {
     format: "victor-os",
-    schemaVersion: 1,
+    schemaVersion: 2,
     exportedAt: new Date().toISOString(),
     data,
   };
@@ -218,8 +237,8 @@ export function parseBackup(json: string): BackupFile {
       `Backup validation failed at ${issue.path.join(".") || "root"}: ${issue.message}`,
     );
   }
-  validateDataRelations(result.data.data);
-  return result.data as BackupFile;
+  const data = parseAppData(result.data.data);
+  return { ...result.data, data } as BackupFile;
 }
 
 function validateDataRelations(data: AppData) {
@@ -251,6 +270,11 @@ function validateDataRelations(data: AppData) {
       }
     }
   }
+  for (const row of data.costModels) {
+    if ((row.inputPrice === null) !== (row.outputPrice === null))
+      throw new Error(`Model ${row.model} needs both token prices or neither.`);
+    if (row.sourceUrl) validateUrl(row.sourceUrl);
+  }
 }
 
 export function parseAppData(input: unknown): AppData {
@@ -262,7 +286,7 @@ export function parseAppData(input: unknown): AppData {
     );
   }
   validateDataRelations(result.data);
-  return result.data;
+  return result.data as AppData;
 }
 
 export function parseRecord<C extends CollectionName>(
@@ -280,6 +304,16 @@ export function parseRecord<C extends CollectionName>(
   if (collection === "projects") {
     for (const url of (result.data as { links: string[] }).links)
       validateUrl(url);
+  }
+  if (collection === "costModels") {
+    const row = result.data as {
+      inputPrice: number | null;
+      outputPrice: number | null;
+      sourceUrl?: string;
+    };
+    if ((row.inputPrice === null) !== (row.outputPrice === null))
+      throw new Error("Model needs both token prices or neither.");
+    if (row.sourceUrl) validateUrl(row.sourceUrl);
   }
   return result.data as AppData[C][number];
 }

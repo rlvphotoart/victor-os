@@ -36,8 +36,10 @@ const NotesPage = lazy(() =>
 const ToolboxPage = lazy(() =>
   import("./pages/Toolbox").then((module) => ({ default: module.ToolboxPage })),
 );
-const LinksPage = lazy(() =>
-  import("./pages/Links").then((module) => ({ default: module.LinksPage })),
+const PlaybooksPage = lazy(() =>
+  import("./pages/Playbooks").then((module) => ({
+    default: module.PlaybooksPage,
+  })),
 );
 const SettingsPage = lazy(() =>
   import("./pages/Settings").then((module) => ({
@@ -216,7 +218,8 @@ function AppContent() {
           <Route path="/ai-lab" element={<AILabPage data={data} />} />
           <Route path="/notes" element={<NotesPage data={data} />} />
           <Route path="/toolbox" element={<ToolboxPage />} />
-          <Route path="/links" element={<LinksPage data={data} />} />
+          <Route path="/playbooks" element={<PlaybooksPage data={data} />} />
+          <Route path="/links" element={<Navigate to="/playbooks" replace />} />
           <Route path="/settings" element={<SettingsPage data={data} />} />
           <Route path="/more" element={<MorePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

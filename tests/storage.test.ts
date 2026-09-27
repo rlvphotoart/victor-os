@@ -7,6 +7,9 @@ describe("data migration and backup safety", () => {
   it("round-trips every cloud collection and accepts older settings", () => {
     const demo = makeDemoData();
     expect(parseBackup(JSON.stringify(makeBackup(demo))).data).toEqual(demo);
+    const v1 = { ...makeBackup(demo), schemaVersion: 1, data: { ...demo } };
+    delete (v1.data as Partial<typeof demo>).playbooks;
+    expect(parseBackup(JSON.stringify(v1)).data.playbooks).toEqual([]);
     const oldSettings = { ...demo.settings[0] };
     delete oldSettings.dockExpanded;
     delete oldSettings.recentContexts;
@@ -35,6 +38,7 @@ describe("data migration and backup safety", () => {
       costModels: [],
       notes: [],
       links: [],
+      playbooks: [],
       settings: [
         {
           id: "app",
@@ -59,6 +63,26 @@ describe("data migration and backup safety", () => {
     });
     expect(() => parseBackup(JSON.stringify(backup))).toThrow(
       "invalid link URL",
+    );
+  });
+
+  it("keeps non-token-priced platforms distinct from zero-cost models", () => {
+    const data = makeDemoData();
+    data.costModels.push({
+      id: uid(),
+      provider: "Paperclip",
+      model: "Agent",
+      inputPrice: null,
+      outputPrice: null,
+      pricingNote: "Uses another provider",
+    });
+    expect(
+      parseBackup(JSON.stringify(makeBackup(data))).data.costModels.at(-1)
+        ?.inputPrice,
+    ).toBeNull();
+    data.costModels.at(-1)!.outputPrice = 1;
+    expect(() => parseBackup(JSON.stringify(makeBackup(data)))).toThrow(
+      "both token prices or neither",
     );
   });
 });

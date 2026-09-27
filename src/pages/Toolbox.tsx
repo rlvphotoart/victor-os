@@ -8,12 +8,14 @@ import {
   Copy,
   Fingerprint,
   Link2,
+  ListChecks,
   Search,
   TextCursorInput,
   WandSparkles,
 } from "lucide-react";
 import { TOOLS } from "../types";
 import { copyText } from "../lib/utils";
+import { reconcileIds } from "../lib/coverage";
 import { Badge, Button, Card, Field, Input, Textarea } from "../components/ui";
 import { useToast } from "../components/toast";
 
@@ -27,6 +29,7 @@ const toolIcons = [
   Search,
   TextCursorInput,
   WandSparkles,
+  ListChecks,
 ];
 type ToolId = (typeof TOOLS)[number]["id"];
 
@@ -172,6 +175,9 @@ function ToolContent({ id }: { id: ToolId }) {
           );
           break;
         }
+        case "coverage":
+          setOutput(reconcileIds(input, secondary));
+          break;
       }
     } catch (issue) {
       setOutput("");
@@ -371,6 +377,41 @@ function ToolContent({ id }: { id: ToolId }) {
             />
           </Field>
           <Button onClick={() => run("test")}>Test regex</Button>
+        </>
+      )}
+      {id === "coverage" && (
+        <>
+          <p className="helper-line">
+            Paste requirement IDs and test-covered requirement IDs. Lists stay
+            in this browser and are never uploaded.
+          </p>
+          <div className="form-grid">
+            <Field
+              label="All requirement IDs"
+              hint="One per line, comma, tab, or semicolon"
+            >
+              <Textarea
+                rows={12}
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                placeholder={"REQ-001\nREQ-002\nREQ-003"}
+                spellCheck={false}
+              />
+            </Field>
+            <Field
+              label="IDs with test evidence"
+              hint="The same identifier format as the first list"
+            >
+              <Textarea
+                rows={12}
+                value={secondary}
+                onChange={(event) => setSecondary(event.target.value)}
+                placeholder={"REQ-001\nREQ-003"}
+                spellCheck={false}
+              />
+            </Field>
+          </div>
+          <Button onClick={() => run("compare")}>Reconcile coverage</Button>
         </>
       )}
       {error && <div className="tool-error">{error}</div>}

@@ -412,6 +412,7 @@ export function makeDemoData(): AppData {
     ],
     notes,
     links,
+    playbooks: [],
     settings: [
       {
         id: "app",

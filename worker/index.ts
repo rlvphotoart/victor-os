@@ -376,7 +376,7 @@ export async function handleApiForOwner(
     }
     if (request.method === "POST" && path === "/api/clear-demo") {
       await env.DB.prepare(
-        "DELETE FROM records WHERE owner = ? AND collection <> 'settings' AND json_extract(payload, '$.demo') = 1",
+        "DELETE FROM records WHERE owner = ? AND collection IN ('projects','tasks','prompts','costModels','links','playbooks') AND json_extract(payload, '$.demo') = 1",
       )
         .bind(owner)
         .run();

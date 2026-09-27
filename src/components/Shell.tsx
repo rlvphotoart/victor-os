@@ -2,12 +2,12 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
+  BookOpenCheck,
   Boxes,
   CircleDollarSign,
   Command,
   Home,
   LayoutGrid,
-  Link2,
   ListTodo,
   Menu,
   NotebookPen,
@@ -33,7 +33,7 @@ const navigation = [
   { path: "/ai-lab", label: "AI Lab", icon: Sparkles, index: "04" },
   { path: "/notes", label: "Notes", icon: NotebookPen, index: "05" },
   { path: "/toolbox", label: "Tools", icon: LayoutGrid, index: "06" },
-  { path: "/links", label: "Links", icon: Link2, index: "07" },
+  { path: "/playbooks", label: "Playbooks", icon: BookOpenCheck, index: "07" },
   { path: "/settings", label: "Settings", icon: Settings2, index: "08" },
 ] as const;
 
@@ -44,7 +44,7 @@ const descriptions: Record<string, string> = {
   "/ai-lab": "Your working library of prompts and model costs.",
   "/notes": "A quieter place for thoughts worth keeping.",
   "/toolbox": "Small instruments for precise work.",
-  "/links": "Your destinations, without the search.",
+  "/playbooks": "Repeatable steps for work that matters.",
   "/settings": "Personalize the system and protect your data.",
   "/more": "The rest of your workspace.",
 };

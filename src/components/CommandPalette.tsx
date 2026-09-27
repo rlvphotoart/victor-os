@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
+  BookOpenCheck,
   Boxes,
   CircleDollarSign,
   Command,
   Download,
   Home,
   LayoutGrid,
-  Link2,
   ListTodo,
   NotebookPen,
   Plus,
@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import type { AppData } from "../types";
 import { TOOLS } from "../types";
-import { downloadText, nowISO, safeUrl, today, uid } from "../lib/utils";
+import { downloadText, nowISO, today, uid } from "../lib/utils";
 import { repository } from "../data/repository";
 import { useToast } from "./toast";
 
@@ -119,12 +119,12 @@ export function CommandPalette({
         icon: LayoutGrid,
       },
       {
-        key: "page-links",
+        key: "page-playbooks",
         kind: "PAGE",
-        title: "Links",
-        subtitle: "Quick links",
-        path: "/links",
-        icon: Link2,
+        title: "Playbooks",
+        subtitle: "Reusable checklists",
+        path: "/playbooks",
+        icon: BookOpenCheck,
       },
       {
         key: "page-settings",
@@ -220,16 +220,14 @@ export function CommandPalette({
         path: `/notes?open=${item.id}`,
         icon: NotebookPen,
       })),
-      ...data.links
-        .filter((item) => safeUrl(item.url))
-        .map((item) => ({
-          key: `link-${item.id}`,
-          kind: "LINK",
-          title: item.name,
-          subtitle: item.category,
-          url: safeUrl(item.url) ?? undefined,
-          icon: Link2,
-        })),
+      ...data.playbooks.map((item) => ({
+        key: `playbook-${item.id}`,
+        kind: "PLAYBOOK",
+        title: item.title,
+        subtitle: item.category,
+        path: `/playbooks#${item.id}`,
+        icon: BookOpenCheck,
+      })),
       ...TOOLS.map((item) => ({
         key: `tool-${item.id}`,
         kind: "TOOL",

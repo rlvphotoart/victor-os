@@ -27,6 +27,7 @@ export function emptyData(): AppData {
     costModels: [],
     notes: [],
     links: [],
+    playbooks: [],
     settings: [defaultSettings],
   };
 }
@@ -183,6 +184,7 @@ export const repository = {
   costModels: collection("costModels"),
   notes: collection("notes"),
   links: collection("links"),
+  playbooks: collection("playbooks"),
 
   subscribe(listener: () => void) {
     listeners.add(listener);
@@ -225,6 +227,51 @@ export const repository = {
         method: "POST",
         body: "{}",
       });
+      await load();
+    });
+  },
+
+  personalizeWorkspace() {
+    return enqueue(async () => {
+      const {
+        curatedCostModels,
+        curatedPlaybooks,
+        curatedProjects,
+        curatedPrompts,
+        curatedSundayTasks,
+      } = await import("./workspace");
+      await load();
+      // Only these collections are part of the personalization. Money and
+      // Notes are deliberately untouched, including their demo records.
+      for (const row of current.tasks.filter((item) => item.demo))
+        await deleteRecord("tasks", row.id);
+      for (const row of current.projects.filter(
+        (item) =>
+          item.demo &&
+          !current.tasks.some((task) => task.projectId === item.id),
+      ))
+        await deleteRecord("projects", row.id);
+      for (const row of current.prompts.filter((item) => item.demo))
+        await deleteRecord("prompts", row.id);
+      for (const row of current.costModels.filter((item) => item.demo))
+        await deleteRecord("costModels", row.id);
+      for (const row of current.links.filter((item) => item.demo))
+        await deleteRecord("links", row.id);
+      for (const row of curatedProjects)
+        if (!current.projects.some((item) => item.id === row.id))
+          await putRecord("projects", row);
+      for (const row of curatedSundayTasks())
+        if (!current.tasks.some((item) => item.id === row.id))
+          await putRecord("tasks", row);
+      for (const row of curatedPrompts)
+        if (!current.prompts.some((item) => item.id === row.id))
+          await putRecord("prompts", row);
+      for (const row of curatedCostModels)
+        if (!current.costModels.some((item) => item.id === row.id))
+          await putRecord("costModels", row);
+      for (const row of curatedPlaybooks)
+        if (!current.playbooks.some((item) => item.id === row.id))
+          await putRecord("playbooks", row);
       await load();
     });
   },

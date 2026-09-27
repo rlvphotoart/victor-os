@@ -1,16 +1,18 @@
 # Victor OS
 
-A private personal command center for projects, tasks, finances, prompts, notes, links, and browser utilities. The interface is a React progressive web app. Data is stored in Cloudflare D1 and is available in every browser after signing in with the same access key.
+A private personal command center for projects, tasks, finances, prompts, notes, playbooks, and browser utilities. The interface is a React progressive web app. Data is stored in Cloudflare D1 and is available in every browser after signing in with the same access key.
 
 ## What is included
 
-- Home dashboard with priorities, financial position, projects, and quick links.
+- Home dashboard with priorities, financial position, projects, and quick access to playbooks.
 - Tasks with Today and board views, filters, sorting, drag and drop, and editing.
 - Projects with status, priority, progress, notes, next action, and links.
 - Money with manual accounts, debts, investments, transactions, budgets, goals, and monthly charts. There is no bank connection.
-- AI Lab with prompt search, favorites, duplication, version history, and an editable model cost calculator.
+- AI Lab with 22 reusable prompts, search, favorites, duplication, version history, and an editable model cost calculator.
+- Model cost reference with researched, dated source links, provider filters, and explicit unpriced entries for Paperclip and Hermès. Estimates use standard direct API text-token rates in USD and exclude caching, long context, tools, tax, and subscription billing.
+- Playbooks with reusable checklists for weekly planning, release readiness, validation evidence, defect triage, and AI pilots.
 - Markdown notes with autosave, pins, and search.
-- Browser-only utilities for JSON, Base64, URL encoding, timestamps, UUIDs, text diff, regex, counting, and token estimates.
+- Browser-only utilities for JSON, Base64, URL encoding, timestamps, UUIDs, text diff, regex, counting, token estimates, and requirement/test ID reconciliation.
 - Global command palette, responsive mobile navigation, dark/light theme, and installable PWA.
 - Complete JSON backup and restore, demo-data removal, and a strongly confirmed reset.
 
@@ -30,7 +32,7 @@ The interface design rationale is in [DESIGN_LANGUAGE.md](DESIGN_LANGUAGE.md). A
 
 Normal app data flows through [src/data/repository.ts](src/data/repository.ts), including appearance, dock layout, recent contexts, and command history. The repository serializes writes, refreshes when the app regains focus and every minute while open, and rejects stale edits to the same record rather than silently overwriting them. [worker/index.ts](worker/index.ts) validates requests and writes to D1. [migrations/0001_records.sql](migrations/0001_records.sql) defines the database table. Records are partitioned by a single private workspace owner.
 
-The first authenticated visit seeds clearly marked demo records. Settings can remove only those records, and a reset does not seed them again. If the workspace is empty later, Settings can load the examples again.
+The first authenticated visit seeds clearly marked demo records. Settings has a one-time **Apply personal workspace** action: it downloads a backup, removes example records outside Money and Notes, and adds curated projects, Sunday tasks, prompts, model rates, and playbooks. It leaves the Money and Notes collections untouched. Afterward, Settings can clear remaining nonfinancial examples, and a reset does not seed examples again. If the workspace is empty later, Settings can load them again.
 
 The deployed app does not use IndexedDB or localStorage for application data. The PWA shell can be cached, but cloud data requires an internet connection. The service worker does not cache API responses.
 
@@ -89,7 +91,7 @@ The older browser data remains in its original browser until you choose to remov
 
 ## Backup and recovery
 
-Settings → Export all data downloads victor-os-backup-YYYY-MM-DD.json. It includes every record and setting, including prompt versions. Imports validate format, schema version, IDs, record structures, and links, show a preview, then require RESTORE. The replacement runs as one D1 transaction. Reset database requires RESET VICTOR OS and applies to every device. Clear demo data removes only marked example records.
+Settings → Export all data downloads victor-os-backup-YYYY-MM-DD.json. It includes every record and setting, including prompt versions, model source metadata, legacy links, and playbooks. Imports accept both schema v1 and v2, validate format, IDs, record structures, and URLs, show a preview, then require RESTORE. The replacement runs as one D1 transaction. Reset database requires RESET VICTOR OS and applies to every device. Clear demo data deliberately excludes Money and Notes.
 
 Backups contain financial and other private information. Store them privately. D1 Time Travel may provide additional recovery, but regular JSON exports remain the portable backup.
 
