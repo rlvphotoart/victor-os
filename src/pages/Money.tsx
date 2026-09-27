@@ -10,6 +10,12 @@ const baseUrl = BUDGET_SHEET_URL.split("?gid=")[0];
 const xtbUrl = `${baseUrl}?gid=1372025324`;
 const historyUrl = `${baseUrl}?gid=92941595`;
 const ron = (value: number) => money(value, "RON");
+const xtbRon = (value: number) => new Intl.NumberFormat("ro-RO", {
+  style: "currency",
+  currency: "RON",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+}).format(value);
 const number = (value: number) =>
   new Intl.NumberFormat("ro-RO", { maximumFractionDigits: 0 }).format(value);
 
@@ -102,7 +108,7 @@ export function MoneyPage({ data }: { data: AppData }) {
         <Card>
           <span>INVESTIȚII XTB</span>
           <strong>
-            {summary.xtbValue === null ? "—" : ron(summary.xtbValue)}
+            {summary.xtbValue === null ? "—" : xtbRon(summary.xtbValue)}
           </strong>
           <small>
             {summary.xtbValue === null
@@ -197,7 +203,7 @@ export function MoneyPage({ data }: { data: AppData }) {
                 <strong>
                   {summary.xtbValue === null
                     ? "Necompletat"
-                    : ron(summary.xtbValue)}
+                    : xtbRon(summary.xtbValue)}
                 </strong>
               </div>
               <div>
@@ -205,16 +211,16 @@ export function MoneyPage({ data }: { data: AppData }) {
                 <strong>
                   {sheet.xtb?.cashRon == null
                     ? "Necompletat"
-                    : ron(sheet.xtb.cashRon)}
+                    : xtbRon(sheet.xtb.cashRon)}
                 </strong>
               </div>
               <div>
                 <span>Sumă poziții afișate</span>
-                <strong>{summary.positionValue === null ? "Necompletat" : ron(summary.positionValue)}</strong>
+                <strong>{summary.positionValue === null ? "Necompletat" : xtbRon(summary.positionValue)}</strong>
               </div>
               <div>
                 <span>Retragere în așteptare</span>
-                <strong>{sheet.xtb?.reported?.pendingWithdrawalRon == null ? "Necompletat" : ron(sheet.xtb.reported.pendingWithdrawalRon)}</strong>
+                <strong>{sheet.xtb?.reported?.pendingWithdrawalRon == null ? "Necompletat" : xtbRon(sheet.xtb.reported.pendingWithdrawalRon)}</strong>
               </div>
               <div>
                 <span>Poziții</span>
@@ -299,37 +305,37 @@ export function MoneyPage({ data }: { data: AppData }) {
             <div>
               <span>Total afișat de XTB</span>
               <strong>
-                {summary.xtbValue === null ? "—" : ron(summary.xtbValue)}
+                {summary.xtbValue === null ? "—" : xtbRon(summary.xtbValue)}
               </strong>
             </div>
             <div>
               <span>Buget inițial</span>
               <strong>
-                {sheet.xtb?.reported?.budgetRon == null ? "—" : ron(sheet.xtb.reported.budgetRon)}
+                {sheet.xtb?.reported?.budgetRon == null ? "—" : xtbRon(sheet.xtb.reported.budgetRon)}
               </strong>
             </div>
             <div>
               <span>Fond afișat</span>
               <strong>
-                {sheet.xtb?.reported?.fundRon == null ? "—" : ron(sheet.xtb.reported.fundRon)}
+                {sheet.xtb?.reported?.fundRon == null ? "—" : xtbRon(sheet.xtb.reported.fundRon)}
               </strong>
             </div>
             <div>
               <span>Sumă poziții afișate</span>
               <strong>
-                {summary.positionValue === null ? "—" : ron(summary.positionValue)}
+                {summary.positionValue === null ? "—" : xtbRon(summary.positionValue)}
               </strong>
             </div>
           </div>
           <div className="snapshot-list">
-            <div><span>Retragere în așteptare</span><strong>{sheet.xtb?.reported?.pendingWithdrawalRon == null ? "—" : ron(sheet.xtb.reported.pendingWithdrawalRon)}</strong></div>
-            <div><span>Cumpărare în așteptare</span><strong>{sheet.xtb?.reported?.pendingBuyRon == null ? "—" : ron(sheet.xtb.reported.pendingBuyRon)}</strong></div>
-            <div><span>Vânzare în așteptare</span><strong>{sheet.xtb?.reported?.pendingSellRon == null ? "—" : ron(sheet.xtb.reported.pendingSellRon)}</strong></div>
-            <div><span>Diferență fond față de suma pozițiilor</span><strong>{summary.fundGap === null ? "—" : ron(summary.fundGap)}</strong></div>
-            <div><span>Diferență total față de fond + retragere</span><strong>{summary.accountGap === null ? "—" : ron(summary.accountGap)}</strong></div>
-            <div><span>Numerar disponibil confirmat</span><strong>{sheet.xtb?.cashRon == null ? "Necompletat" : ron(sheet.xtb.cashRon)}</strong></div>
-            <div><span>Capital investit în poziții</span><strong>{summary.invested === null ? "Necompletat" : ron(summary.invested)}</strong></div>
-            <div><span>Rezultat nerealizat</span><strong>{summary.unrealized === null ? "Necompletat" : ron(summary.unrealized)}</strong></div>
+            <div><span>Retragere în așteptare</span><strong>{sheet.xtb?.reported?.pendingWithdrawalRon == null ? "—" : xtbRon(sheet.xtb.reported.pendingWithdrawalRon)}</strong></div>
+            <div><span>Cumpărare în așteptare</span><strong>{sheet.xtb?.reported?.pendingBuyRon == null ? "—" : xtbRon(sheet.xtb.reported.pendingBuyRon)}</strong></div>
+            <div><span>Vânzare în așteptare</span><strong>{sheet.xtb?.reported?.pendingSellRon == null ? "—" : xtbRon(sheet.xtb.reported.pendingSellRon)}</strong></div>
+            <div><span>Diferență fond față de suma pozițiilor</span><strong>{summary.fundGap === null ? "—" : xtbRon(summary.fundGap)}</strong></div>
+            <div><span>Diferență total față de fond + retragere</span><strong>{summary.accountGap === null ? "—" : xtbRon(summary.accountGap)}</strong></div>
+            <div><span>Numerar disponibil confirmat</span><strong>{sheet.xtb?.cashRon == null ? "Necompletat" : xtbRon(sheet.xtb.cashRon)}</strong></div>
+            <div><span>Capital investit în poziții</span><strong>{summary.invested === null ? "Necompletat" : xtbRon(summary.invested)}</strong></div>
+            <div><span>Rezultat nerealizat</span><strong>{summary.unrealized === null ? "Necompletat" : xtbRon(summary.unrealized)}</strong></div>
           </div>
           <p className="helper-line">Ordinele și retragerea sunt în așteptare și nu sunt adăugate încă o dată la total. Diferențele sunt afișate pentru reconciliere; nu reprezintă profit sau numerar disponibil.</p>
           {sheet.xtb?.positions.length ? (
@@ -350,9 +356,9 @@ export function MoneyPage({ data }: { data: AppData }) {
                       </small>
                     </div>
                     <div className="data-amount">
-                      <strong>{current === null ? "Valoare de completat" : ron(current)}</strong>
+                      <strong>{current === null ? "Valoare de completat" : xtbRon(current)}</strong>
                       <small>
-                        {gain === null ? "Datele poziției sunt incomplete" : `${gain >= 0 ? "+" : ""}${ron(gain)} rezultat nerealizat`}
+                        {gain === null ? "Costul poziției nu este completat" : `${gain >= 0 ? "+" : ""}${xtbRon(gain)} rezultat nerealizat`}
                       </small>
                     </div>
                   </div>

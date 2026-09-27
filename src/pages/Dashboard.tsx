@@ -22,6 +22,9 @@ export function DashboardPage({ data }: { data: AppData }) {
   ];
   const sheet = data.sheetBudgets[0];
   const summary = sheetMoneySummary(sheet);
+  const xtbRon = (value: number) => new Intl.NumberFormat("ro-RO", {
+    style: "currency", currency: "RON", minimumFractionDigits: 2, maximumFractionDigits: 2,
+  }).format(value);
   const name = data.settings[0]?.name || "Victor";
   const hour = new Date().getHours();
   const greeting =
@@ -194,7 +197,7 @@ export function DashboardPage({ data }: { data: AppData }) {
                 <strong>
                   {summary?.xtbValue == null
                     ? "—"
-                    : money(summary.xtbValue, "RON")}
+                    : xtbRon(summary.xtbValue)}
                 </strong>
               </span>
               <span>
