@@ -469,7 +469,7 @@ export function SettingsPage({ data }: { data: AppData }) {
           <CardHeader
             eyebrow="MONEY / GOOGLE SHEETS"
             title="Sync your monthly budget"
-            subtitle="Keep the private spreadsheet as the source. Victor OS receives only the values shown in Money."
+            subtitle="Keep the spreadsheet as the source. Victor OS receives only the values shown in Money."
           />
           <p className="helper-line">
             Linked tab:{" "}
@@ -483,6 +483,12 @@ export function SettingsPage({ data }: { data: AppData }) {
             . Changes appear after an edit, with a five-minute fallback for
             formula or automated changes. Values remain in RON and do not change
             manually entered accounts or transactions.
+          </p>
+          <p className="helper-line">
+            This Google Sheet currently allows anyone with its link to view it.
+            Because it contains financial values, consider changing Share →
+            General access to Restricted. Sync still works with restricted
+            sharing.
           </p>
           <p className="helper-line">
             Status: {sheetPaired ? "Pairing key active" : "Not connected"}
@@ -575,7 +581,8 @@ export function SettingsPage({ data }: { data: AppData }) {
                   In the linked spreadsheet, open Extensions → Apps Script.
                 </li>
                 <li>
-                  Replace the editor contents with the code below and save.
+                  Copy the setup code below, replace the editor contents with
+                  it, and save.
                 </li>
                 <li>
                   Select <code>setupVictorSync</code> and click Run. Authorize
@@ -597,9 +604,6 @@ export function SettingsPage({ data }: { data: AppData }) {
               >
                 <Copy size={16} /> Copy setup code
               </Button>
-              <pre>
-                <code>{sheetScript}</code>
-              </pre>
               <p className="helper-line">
                 This code contains a write-only sync key. Keep the Apps Script
                 project private. Generating new setup code revokes the old key.

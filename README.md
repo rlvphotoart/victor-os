@@ -80,7 +80,7 @@ For finance, the connector only records completed transactions. It never moves m
 
 ## Sync the monthly Google Sheet
 
-The private spreadsheet `your budget workbook`, tab `Buget lunar` (`gid=1676910216`), can push B2 (planned salary), B3 (month), A5:C9 (five budget categories and actual spending), B12:B13 (emergency fund), and optional B15 (end-of-month debt balance) into Money. Victor OS displays this as a clearly labeled RON snapshot. It does not infer account balances, create transactions, convert currencies, or blend planned salary with received income. The sheet remains the source of truth.
+The spreadsheet `your budget workbook`, tab `Buget lunar` (`gid=1676910216`), can push B2 (planned salary), B3 (month), A5:C9 (five budget categories and actual spending), B12:B13 (emergency fund), and optional B15 (end-of-month debt balance) into Money. Victor OS displays this as a clearly labeled RON snapshot. It does not infer account balances, create transactions, convert currencies, or blend planned salary with received income. The sheet remains the source of truth.
 
 1. Deploy this version of Victor OS and sign in.
 2. In Settings → Sync your monthly budget, click **Connect Google Sheet**. This creates a random write-only sync key; the Worker stores only its SHA-256 hash.
@@ -88,7 +88,7 @@ The private spreadsheet `your budget workbook`, tab `Buget lunar` (`gid=16769102
 4. Select `setupVictorSync` and click Run. Complete Google's authorization in your own browser. The function installs an edit trigger and a five-minute time trigger, then sends the current values immediately.
 5. Refresh Money. The last update time and synced values should appear. Subsequent direct cell edits trigger sync; formula recalculations and script/API changes are picked up by the timer within roughly five minutes.
 
-The Apps Script project must stay private because the generated code contains the sync key. **Disconnect** revokes the key. **Generate new setup code** rotates it and requires replacing the code in Apps Script and rerunning `setupVictorSync`. **Clear Money** removes the snapshot and revokes the key. JSON backup includes the snapshot, but never the sync key. Restoring a backup does not restore a live connection; pair again afterward. The sheet is never made public and no Google API key or paid service is needed. Google's [installable triggers](https://developers.google.com/apps-script/guides/triggers/installable) and [Apps Script quotas](https://developers.google.com/apps-script/guides/services/quotas) apply.
+The Apps Script project must stay private because the generated code contains the sync key. **Disconnect** revokes the key. **Generate new setup code** rotates it and requires replacing the code in Apps Script and rerunning `setupVictorSync`. **Clear Money** removes the snapshot and revokes the key. JSON backup includes the snapshot, but never the sync key. Restoring a backup does not restore a live connection; pair again afterward. Sync does not require making the sheet public or using a paid service. At implementation time, this sheet allowed anyone with its link to view it; change Google Sheets → Share → General access to Restricted if that access is unintended. Google's [installable triggers](https://developers.google.com/apps-script/guides/triggers/installable) and [Apps Script quotas](https://developers.google.com/apps-script/guides/services/quotas) apply.
 
 ## Run locally
 

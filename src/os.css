@@ -2830,16 +2830,6 @@ body:has(.focus-panel) .vos-workspace {
   text-align: right;
   opacity: 0.7;
 }
-.sheet-script-setup pre {
-  max-height: 280px;
-  overflow: auto;
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  font-size: 0.72rem;
-  white-space: pre;
-}
 @media (max-width: 700px) {
   .sheet-budget-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
