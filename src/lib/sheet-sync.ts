@@ -1,11 +1,10 @@
 export const BUDGET_SHEET_ID = "YOUR_GOOGLE_SHEET_ID";
 export const BUDGET_SHEET_URL = `https://docs.google.com/spreadsheets/d/${BUDGET_SHEET_ID}/edit?gid=1676910216`;
 
-export function appsScriptForBudget(origin: string, key: string) {
+export function appsScriptForBudget(origin: string) {
   return `// Victor OS: bound script for "your budget workbook".
-// This key can update ONLY the linked Money sheet snapshot. Keep this project private.
+// Append this below your existing code. The key belongs in Script Properties, not source.
 const VICTOR_SYNC_URL = ${JSON.stringify(origin + "/api/sheet-sync/push")};
-const VICTOR_SYNC_KEY = ${JSON.stringify(key)};
 const VICTOR_SHEET_ID = ${JSON.stringify(BUDGET_SHEET_ID)};
 
 function victorMonth(value) {
@@ -26,6 +25,8 @@ function victorNumber(value, cell) {
 }
 
 function syncVictorBudget() {
+  const syncKey = PropertiesService.getScriptProperties().getProperty('VICTOR_SYNC_KEY');
+  if (!syncKey) throw new Error('Set VICTOR_SYNC_KEY in Project Settings > Script properties.');
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   if (spreadsheet.getId() !== VICTOR_SHEET_ID) throw new Error('This script belongs to the linked Victor OS sheet.');
   const sheet = spreadsheet.getSheetByName('Buget lunar');
@@ -50,7 +51,7 @@ function syncVictorBudget() {
   const response = UrlFetchApp.fetch(VICTOR_SYNC_URL, {
     method: 'post',
     contentType: 'application/json',
-    headers: { 'X-Victor-Sync-Key': VICTOR_SYNC_KEY },
+    headers: { 'X-Victor-Sync-Key': syncKey },
     payload: JSON.stringify(payload),
     muteHttpExceptions: true,
   });

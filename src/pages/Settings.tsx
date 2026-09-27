@@ -93,7 +93,7 @@ export function SettingsPage({ data }: { data: AppData }) {
   const [chatConnectionError, setChatConnectionError] = useState("");
   const [revokingChat, setRevokingChat] = useState<string | null>(null);
   const [sheetPaired, setSheetPaired] = useState(false);
-  const [sheetScript, setSheetScript] = useState("");
+  const [sheetKey, setSheetKey] = useState("");
   const [sheetBusy, setSheetBusy] = useState(false);
   const [confirm, setConfirm] = useState<
     "import" | "reset" | "demo" | "seed" | "money" | null
@@ -514,9 +514,7 @@ export function SettingsPage({ data }: { data: AppData }) {
                   if (!response.ok)
                     throw new Error("Could not create sheet connection.");
                   const result = (await response.json()) as { key: string };
-                  setSheetScript(
-                    appsScriptForBudget(window.location.origin, result.key),
-                  );
+                  setSheetKey(result.key);
                   setSheetPaired(true);
                   notify(
                     "Connection prepared. Install the script in the spreadsheet.",
@@ -554,7 +552,7 @@ export function SettingsPage({ data }: { data: AppData }) {
                     if (!response.ok)
                       throw new Error("Could not disconnect the sheet.");
                     setSheetPaired(false);
-                    setSheetScript("");
+                    setSheetKey("");
                     notify(
                       "Sheet connection revoked. Existing snapshot remains visible until Money is cleared.",
                     );
@@ -574,15 +572,21 @@ export function SettingsPage({ data }: { data: AppData }) {
               </Button>
             )}
           </div>
-          {sheetScript && (
+          {sheetKey && (
             <div className="sheet-script-setup">
               <ol className="chat-steps">
                 <li>
                   In the linked spreadsheet, open Extensions → Apps Script.
                 </li>
                 <li>
-                  Copy the setup code below, replace the editor contents with
-                  it, and save.
+                  Copy the setup code below, append it after the existing
+                  <code> Cod.gs </code> code, and save. Keep the existing
+                  month-history functions.
+                </li>
+                <li>
+                  In Project Settings → Script properties, add{" "}
+                  <code>VICTOR_SYNC_KEY</code>. Copy its value from Victor OS
+                  and paste it there. Do not put the key in source code.
                 </li>
                 <li>
                   Select <code>setupVictorSync</code> and click Run. Authorize
@@ -597,16 +601,32 @@ export function SettingsPage({ data }: { data: AppData }) {
                 variant="secondary"
                 onClick={() =>
                   void navigator.clipboard
-                    .writeText(sheetScript)
+                    .writeText(appsScriptForBudget(window.location.origin))
                     .then(() => notify("Setup code copied"))
                     .catch(() => notify("Could not copy code", "error"))
                 }
               >
                 <Copy size={16} /> Copy setup code
               </Button>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  void navigator.clipboard
+                    .writeText(sheetKey)
+                    .then(() =>
+                      notify(
+                        "Sync key copied. Paste it into Script properties.",
+                      ),
+                    )
+                    .catch(() => notify("Could not copy sync key", "error"))
+                }
+              >
+                <Copy size={16} /> Copy sync key
+              </Button>
               <p className="helper-line">
-                This code contains a write-only sync key. Keep the Apps Script
-                project private. Generating new setup code revokes the old key.
+                The key can update only the linked Money snapshot. Keep the Apps
+                Script project private. Generating new setup code revokes the
+                old key.
               </p>
             </div>
           )}
@@ -817,7 +837,7 @@ export function SettingsPage({ data }: { data: AppData }) {
             setPreview(null);
             setName(preview.data.settings[0].name);
             setSheetPaired(false);
-            setSheetScript("");
+            setSheetKey("");
             notify("Cloud backup restored");
           }}
         />
@@ -834,7 +854,7 @@ export function SettingsPage({ data }: { data: AppData }) {
             setName("Victor");
             setChatConnections([]);
             setSheetPaired(false);
-            setSheetScript("");
+            setSheetKey("");
             notify("Database reset");
           }}
         />
@@ -861,7 +881,7 @@ export function SettingsPage({ data }: { data: AppData }) {
           onConfirm={async () => {
             await repository.clearMoney();
             setSheetPaired(false);
-            setSheetScript("");
+            setSheetKey("");
             notify("Money data cleared on every device");
           }}
         />

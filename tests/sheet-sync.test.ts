@@ -38,11 +38,13 @@ function request(value: unknown, credential = key) {
 
 describe("Google Sheet sync", () => {
   it("generates valid bound Apps Script with a scoped endpoint", () => {
-    const script = appsScriptForBudget("https://victor-os.example", key);
+    const script = appsScriptForBudget("https://victor-os.example");
     expect(() => new Function(script)).not.toThrow();
     expect(script).toContain("https://victor-os.example/api/sheet-sync/push");
     expect(script).toContain("function setupVictorSync()");
     expect(script).toContain("everyMinutes(5)");
+    expect(script).toContain("getProperty('VICTOR_SYNC_KEY')");
+    expect(script).not.toContain(key);
   });
   it("accepts the paired key and stores a validated RON snapshot", async () => {
     const run = vi.fn(async () => ({ meta: { changes: 1 } }));
