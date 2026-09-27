@@ -79,21 +79,20 @@ Backup schema version is currently `1`. A later app version should add an explic
 
 This is a static Pages project with no Functions, D1, Workers, or paid services. Cloudflare says static asset requests are [free and unlimited](https://developers.cloudflare.com/pages/functions/pricing/) on free and paid plans; the current Free plan includes [500 builds per month](https://developers.cloudflare.com/pages/platform/limits/), well above ordinary personal development usage. Check Cloudflare’s current terms and limits if that changes.
 
-1. Create a GitHub repository for this project and push the `main` branch. The repository may be private.
-2. In Cloudflare, open **Workers & Pages → Create application → Pages → Import an existing Git repository** and authorize/select the repository.
+1. The private [rlvphotoart/victor-os](https://github.com/rlvphotoart/victor-os) repository already contains the `main` branch. Create a free Cloudflare account if needed.
+2. In Cloudflare, open **Workers & Pages → Create application → Pages → Connect to Git** (sometimes labeled **Import an existing Git repository**). Authorize GitHub access to **only this repository** and select `rlvphotoart/victor-os`.
 3. Set **Production branch:** `main`; **Build command:** `npm run build`; **Build output directory:** `dist`; **Root directory:** `/` (repository root). No environment variables or paid plan are needed. `.node-version` selects Node 22.16.0.
 4. Choose **Save and Deploy**. Open the assigned `*.pages.dev` HTTPS URL. Every later push to `main` triggers a new deployment.
 
 These values follow Cloudflare’s [React Pages guide](https://developers.cloudflare.com/pages/framework-guides/deploy-a-react-site/) and [Git integration guide](https://developers.cloudflare.com/pages/get-started/git-integration/). Cloudflare Pages automatically serves the root app for client-side routes when no top-level `404.html` exists, as documented under [SPA rendering](https://developers.cloudflare.com/pages/configuration/serving-pages/). The `public/_headers` file is copied into `dist/` and applied by Pages.
 
-For a first push from this existing local Git repository, after creating the empty GitHub repository:
+The local repository already tracks `origin/main`. To publish future changes after committing them:
 
 ```bash
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
-git push -u origin main
+git push origin main
 ```
 
-Replace the example GitHub URL with your repository. Do not commit personal backup files; they contain your local data.
+Do not commit personal backup files; they contain your local data. `.gitignore` excludes Victor OS backup exports and local environment files.
 
 ## Install as an app
 
