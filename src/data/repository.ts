@@ -231,6 +231,16 @@ export const repository = {
     });
   },
 
+  clearMoney() {
+    return enqueue(async () => {
+      await api<{ ok: true; removed: number }>("/api/clear-money", {
+        method: "POST",
+        body: "{}",
+      });
+      await load();
+    });
+  },
+
   personalizeWorkspace() {
     return enqueue(async () => {
       const {

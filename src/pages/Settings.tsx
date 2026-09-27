@@ -92,7 +92,7 @@ export function SettingsPage({ data }: { data: AppData }) {
   const [chatConnectionError, setChatConnectionError] = useState("");
   const [revokingChat, setRevokingChat] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<
-    "import" | "reset" | "demo" | "seed" | null
+    "import" | "reset" | "demo" | "seed" | "money" | null
   >(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const notify = useToast();
@@ -146,6 +146,13 @@ export function SettingsPage({ data }: { data: AppData }) {
     (sum, value) => sum + value,
     0,
   );
+  const moneyCount =
+    data.accounts.length +
+    data.debts.length +
+    data.investments.length +
+    data.budgets.length +
+    data.transactions.length +
+    data.goals.length;
   const exportAll = () => {
     downloadText(
       `victor-os-backup-${today()}.json`,
@@ -537,6 +544,39 @@ export function SettingsPage({ data }: { data: AppData }) {
           )}
           <div className="danger-actions">
             <div>
+              <strong>Clear Money</strong>
+              <p>
+                Remove all {moneyCount} accounts, debts, investments, budgets,
+                transactions, and goals from the cloud. Other sections stay as
+                they are. A complete backup downloads before confirmation.
+              </p>
+            </div>
+            <Button
+              variant="danger"
+              disabled={!moneyCount}
+              onClick={async () => {
+                try {
+                  const fresh = await repository.refresh();
+                  downloadText(
+                    `victor-os-before-money-clear-${today()}.json`,
+                    JSON.stringify(makeBackup(fresh), null, 2),
+                  );
+                  setConfirm("money");
+                } catch (issue) {
+                  notify(
+                    issue instanceof Error
+                      ? issue.message
+                      : "Could not prepare the Money backup.",
+                    "error",
+                  );
+                }
+              }}
+            >
+              <Trash2 size={16} /> Clear Money
+            </Button>
+          </div>
+          <div className="danger-actions">
+            <div>
               <strong>Reset database</strong>
               <p>
                 Delete all cloud records on every device and return preferences
@@ -640,6 +680,19 @@ export function SettingsPage({ data }: { data: AppData }) {
           onConfirm={async () => {
             await repository.clearDemoData();
             notify("Demo data cleared");
+          }}
+        />
+      )}
+      {confirm === "money" && (
+        <ConfirmDialog
+          title="Clear all Money data?"
+          message="All accounts, debts, investments, monthly budgets, transactions, and financial goals will be removed from every device. A complete backup download was started before this confirmation. Projects, tasks, prompts, notes, playbooks, and settings will remain."
+          phrase="CLEAR MONEY"
+          confirmLabel="Clear Money"
+          onClose={() => setConfirm(null)}
+          onConfirm={async () => {
+            await repository.clearMoney();
+            notify("Money data cleared on every device");
           }}
         />
       )}

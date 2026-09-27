@@ -125,7 +125,7 @@ The older browser data remains in its original browser until you choose to remov
 
 ## Backup and recovery
 
-Settings → Export all data downloads victor-os-backup-YYYY-MM-DD.json. It includes every record and setting, including prompt versions, model source metadata, legacy links, and playbooks. Imports accept both schema v1 and v2, validate format, IDs, record structures, and URLs, show a preview, then require RESTORE. The replacement runs as one D1 transaction. Reset database requires RESET VICTOR OS and applies to every device. Clear demo data deliberately excludes Money and Notes.
+Settings → Export all data downloads victor-os-backup-YYYY-MM-DD.json. It includes every record and setting, including prompt versions, model source metadata, legacy links, and playbooks. Imports accept both schema v1 and v2, validate format, IDs, record structures, and URLs, show a preview, then require RESTORE. The replacement runs as one D1 transaction. Settings → Clear Money starts a full backup download, then requires CLEAR MONEY before removing accounts, debts, investments, budgets, transactions, and goals on every device. It preserves every other collection and does not re-seed demo Money data. Reset database requires RESET VICTOR OS and applies to every device. Clear demo data deliberately excludes Money and Notes.
 
 Backups contain financial and other private information. Store them privately. D1 Time Travel may provide additional recovery, but regular JSON exports remain the portable backup.
 

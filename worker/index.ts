@@ -398,6 +398,14 @@ export async function handleApiForOwner(
         .run();
       return json({ ok: true });
     }
+    if (request.method === "POST" && path === "/api/clear-money") {
+      const result = await env.DB.prepare(
+        "DELETE FROM records WHERE owner = ? AND collection IN ('accounts','debts','investments','budgets','transactions','goals')",
+      )
+        .bind(owner)
+        .run();
+      return json({ ok: true, removed: result.meta.changes });
+    }
     if (request.method === "POST" && path === "/api/replace") {
       await replaceAll(env.DB, owner, input);
       return json({ ok: true });
