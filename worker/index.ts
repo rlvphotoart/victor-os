@@ -2,6 +2,7 @@ import {
   parseAppData,
   parseRecord,
   recordSchemas,
+  MAX_IMPORT_BYTES,
   type CollectionName,
 } from "../src/data/backup";
 import { makeDemoData } from "../src/data/demo";
@@ -163,7 +164,7 @@ function safeMutation(request: Request, env: Env) {
 
 async function body(request: Request): Promise<unknown> {
   const text = await request.text();
-  if (text.length > 10 * 1024 * 1024)
+  if (encoder.encode(text).byteLength > MAX_IMPORT_BYTES)
     throw new Error("Request exceeds the 10 MB import limit.");
   try {
     return JSON.parse(text);

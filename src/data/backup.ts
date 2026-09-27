@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { AppData } from "../types";
 
+export const MAX_IMPORT_BYTES = 10 * 1024 * 1024;
+
 const id = z.string().min(1);
 const text = z.string();
 const amount = z.number().finite();

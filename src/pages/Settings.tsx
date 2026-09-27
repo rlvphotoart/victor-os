@@ -18,6 +18,7 @@ import type { AppData, WidgetId } from "../types";
 import {
   backupCounts,
   makeBackup,
+  MAX_IMPORT_BYTES,
   parseBackup,
   type BackupFile,
 } from "../data/backup";
@@ -110,8 +111,8 @@ export function SettingsPage({ data }: { data: AppData }) {
     setImportError("");
     setPreview(null);
     if (!file) return;
-    if (file.size > 25 * 1024 * 1024) {
-      setImportError("This backup is larger than 25 MB.");
+    if (file.size > MAX_IMPORT_BYTES) {
+      setImportError("This backup is larger than 10 MB.");
       return;
     }
     try {
