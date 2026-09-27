@@ -14,7 +14,7 @@ function request(origin: string) {
 }
 
 describe("clear Money API", () => {
-  it("deletes only the six financial collections for the signed-in owner", async () => {
+  it("deletes financial collections and revokes sheet sync for the signed-in owner", async () => {
     const run = vi.fn(async () => ({ meta: { changes: 24 } }));
     const bind = vi.fn(() => ({ run }));
     const prepare = vi.fn(() => ({ bind }));
@@ -31,7 +31,7 @@ describe("clear Money API", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true, removed: 24 });
     expect(prepare).toHaveBeenCalledWith(
-      "DELETE FROM records WHERE owner = ? AND collection IN ('accounts','debts','investments','budgets','transactions','goals')",
+      "DELETE FROM records WHERE owner = ? AND collection IN ('accounts','debts','investments','budgets','transactions','goals','sheetBudgets','_sheet_sync_auth')",
     );
     expect(bind).toHaveBeenCalledWith("victor");
     expect(run).toHaveBeenCalledOnce();

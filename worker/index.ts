@@ -42,6 +42,58 @@ const defaultSettings: AppSettings = {
 
 const encoder = new TextEncoder();
 const sessionCookie = "victor_os_session";
+const budgetSheetId = "YOUR_GOOGLE_SHEET_ID";
+const sheetSyncCollection = "_sheet_sync_auth";
+
+async function sha256(value: string) {
+  const digest = await crypto.subtle.digest("SHA-256", encoder.encode(value));
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
+async function pushSheetBudget(request: Request, env: Env) {
+  if (!env.DB || request.method !== "POST")
+    return json({ error: "Not found." }, 404);
+  const key = request.headers.get("X-Victor-Sync-Key") ?? "";
+  if (key.length < 40 || key.length > 200)
+    return json({ error: "Invalid sync key." }, 401);
+  const authorization = await env.DB.prepare(
+    "SELECT payload FROM records WHERE owner = ? AND collection = ? AND id = ?",
+  )
+    .bind("victor", sheetSyncCollection, budgetSheetId)
+    .first<{ payload: string }>();
+  const expected = authorization
+    ? (JSON.parse(authorization.payload) as { hash: string }).hash
+    : "";
+  if (!expected || !(await sameKey(await sha256(key), expected)))
+    return json({ error: "Sync key was revoked or is incorrect." }, 401);
+  let value: AppData["sheetBudgets"][number];
+  try {
+    const input = asObject(await body(request));
+    if (input.sheetId !== budgetSheetId) throw new Error("Invalid sheet ID.");
+    value = parseRecord("sheetBudgets", {
+      ...input,
+      id: "google-budget",
+      syncedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    return json(
+      { error: error instanceof Error ? error.message : "Invalid sheet data." },
+      400,
+    );
+  }
+  try {
+    await env.DB.prepare(
+      "INSERT INTO records (owner, collection, id, payload, revision) VALUES (?, 'sheetBudgets', ?, ?, 1) ON CONFLICT(owner, collection, id) DO UPDATE SET payload = excluded.payload, revision = revision + 1",
+    )
+      .bind("victor", value.id, JSON.stringify(value))
+      .run();
+    return json({ ok: true, syncedAt: value.syncedAt });
+  } catch {
+    return json({ error: "Could not store sheet data." }, 500);
+  }
+}
 
 function json(body: unknown, status = 200) {
   return Response.json(body, {
@@ -340,9 +392,39 @@ export async function handleApiForOwner(
     if (request.method === "GET" && path === "/api/chat-connections") {
       return json({ connections: await listChatConnections(env.DB) });
     }
+    if (request.method === "GET" && path === "/api/sheet-sync/status") {
+      const row = await env.DB.prepare(
+        "SELECT 1 FROM records WHERE owner = ? AND collection = ? AND id = ?",
+      )
+        .bind(owner, sheetSyncCollection, budgetSheetId)
+        .first();
+      return json({ paired: Boolean(row) });
+    }
     if (!safeMutation(request, env))
       return json({ error: "Request origin or content type rejected." }, 403);
     const input = await body(request);
+    if (request.method === "POST" && path === "/api/sheet-sync/pair") {
+      const key = base64url(crypto.getRandomValues(new Uint8Array(48)));
+      await env.DB.prepare(
+        "INSERT INTO records (owner, collection, id, payload, revision) VALUES (?, ?, ?, ?, 1) ON CONFLICT(owner, collection, id) DO UPDATE SET payload = excluded.payload, revision = revision + 1",
+      )
+        .bind(
+          owner,
+          sheetSyncCollection,
+          budgetSheetId,
+          JSON.stringify({ hash: await sha256(key) }),
+        )
+        .run();
+      return json({ key });
+    }
+    if (request.method === "POST" && path === "/api/sheet-sync/disconnect") {
+      await env.DB.prepare(
+        "DELETE FROM records WHERE owner = ? AND collection = ? AND id = ?",
+      )
+        .bind(owner, sheetSyncCollection, budgetSheetId)
+        .run();
+      return json({ ok: true });
+    }
     if (request.method === "DELETE" && path === "/api/chat-connections") {
       const id = asObject(input).id;
       if (typeof id !== "string" || !id)
@@ -400,7 +482,7 @@ export async function handleApiForOwner(
     }
     if (request.method === "POST" && path === "/api/clear-money") {
       const result = await env.DB.prepare(
-        "DELETE FROM records WHERE owner = ? AND collection IN ('accounts','debts','investments','budgets','transactions','goals')",
+        "DELETE FROM records WHERE owner = ? AND collection IN ('accounts','debts','investments','budgets','transactions','goals','sheetBudgets','_sheet_sync_auth')",
       )
         .bind(owner)
         .run();
@@ -446,6 +528,7 @@ export default {
     if (!new URL(request.url).pathname.startsWith("/api/"))
       return json({ error: "Not found." }, 404);
     const path = new URL(request.url).pathname;
+    if (path === "/api/sheet-sync/push") return pushSheetBudget(request, env);
     if (path === "/api/login" && request.method === "POST") {
       if (!safeMutation(request, env))
         return json({ error: "Request origin or content type rejected." }, 403);

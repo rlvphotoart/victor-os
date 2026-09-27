@@ -34,6 +34,7 @@ describe("data migration and backup safety", () => {
       transactions: [],
       budgets: [],
       goals: [],
+      sheetBudgets: [],
       prompts: [],
       costModels: [],
       notes: [],

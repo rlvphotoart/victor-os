@@ -399,6 +399,7 @@ export function makeDemoData(): AppData {
     transactions,
     budgets,
     goals,
+    sheetBudgets: [],
     prompts,
     costModels: [
       {

@@ -80,6 +80,26 @@ const goal = z.object({
   dueDate: text,
   ...demo,
 });
+const sheetBudget = z.object({
+  id: z.literal("google-budget"),
+  sheetId: z.literal("YOUR_GOOGLE_SHEET_ID"),
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  salary: z.number().finite().nonnegative(),
+  categories: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(120),
+        planned: z.number().finite().nonnegative(),
+        spent: z.number().finite().nonnegative(),
+      }),
+    )
+    .min(1)
+    .max(30),
+  emergencyTarget: z.number().finite().nonnegative(),
+  emergencyCurrent: z.number().finite().nonnegative(),
+  debtRemaining: z.number().finite().nonnegative().nullable(),
+  syncedAt: z.string().datetime(),
+});
 const promptVersion = z.object({
   version: z.number().int().positive(),
   content: text,
@@ -173,6 +193,7 @@ export const recordSchemas = {
   transactions: transaction,
   budgets: budget,
   goals: goal,
+  sheetBudgets: sheetBudget,
   prompts: prompt,
   costModels: costModel,
   notes: note,
@@ -192,6 +213,7 @@ const dataSchema = z.object({
   transactions: z.array(transaction),
   budgets: z.array(budget),
   goals: z.array(goal),
+  sheetBudgets: z.array(sheetBudget).default([]),
   prompts: z.array(prompt),
   costModels: z.array(costModel),
   notes: z.array(note),

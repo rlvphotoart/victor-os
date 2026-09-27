@@ -75,6 +75,17 @@ export interface Goal {
   dueDate: string;
   demo?: boolean;
 }
+export interface SheetBudget {
+  id: string;
+  sheetId: string;
+  month: string;
+  salary: number;
+  categories: { name: string; planned: number; spent: number }[];
+  emergencyTarget: number;
+  emergencyCurrent: number;
+  debtRemaining: number | null;
+  syncedAt: string;
+}
 export interface PromptVersion {
   version: number;
   content: string;
@@ -168,6 +179,7 @@ export interface AppData {
   transactions: Transaction[];
   budgets: Budget[];
   goals: Goal[];
+  sheetBudgets: SheetBudget[];
   prompts: Prompt[];
   costModels: CostModel[];
   notes: Note[];

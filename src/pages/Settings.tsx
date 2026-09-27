@@ -33,6 +33,7 @@ import {
   curatedPrompts,
 } from "../data/workspace";
 import { downloadText, today } from "../lib/utils";
+import { appsScriptForBudget, BUDGET_SHEET_URL } from "../lib/sheet-sync";
 import {
   Badge,
   Button,
@@ -91,6 +92,9 @@ export function SettingsPage({ data }: { data: AppData }) {
   >(null);
   const [chatConnectionError, setChatConnectionError] = useState("");
   const [revokingChat, setRevokingChat] = useState<string | null>(null);
+  const [sheetPaired, setSheetPaired] = useState(false);
+  const [sheetScript, setSheetScript] = useState("");
+  const [sheetBusy, setSheetBusy] = useState(false);
   const [confirm, setConfirm] = useState<
     "import" | "reset" | "demo" | "seed" | "money" | null
   >(null);
@@ -112,6 +116,18 @@ export function SettingsPage({ data }: { data: AppData }) {
       active = false;
     };
   }, []);
+  useEffect(() => {
+    void fetch("/api/sheet-sync/status", {
+      credentials: "same-origin",
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Could not check sheet connection.");
+        return response.json() as Promise<{ paired: boolean }>;
+      })
+      .then((status) => setSheetPaired(status.paired))
+      .catch(() => notify("Could not check sheet connection", "error"));
+  }, [notify]);
   const demoCount = [
     "projects",
     "tasks",
@@ -152,7 +168,8 @@ export function SettingsPage({ data }: { data: AppData }) {
     data.investments.length +
     data.budgets.length +
     data.transactions.length +
-    data.goals.length;
+    data.goals.length +
+    data.sheetBudgets.length;
   const exportAll = () => {
     downloadText(
       `victor-os-backup-${today()}.json`,
@@ -448,6 +465,148 @@ export function SettingsPage({ data }: { data: AppData }) {
             ))}
           </div>
         </Card>
+        <Card className="sheet-sync-settings">
+          <CardHeader
+            eyebrow="MONEY / GOOGLE SHEETS"
+            title="Sync your monthly budget"
+            subtitle="Keep the private spreadsheet as the source. Victor OS receives only the values shown in Money."
+          />
+          <p className="helper-line">
+            Linked tab:{" "}
+            <a
+              href={BUDGET_SHEET_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Buget lunar — Salariu 10
+            </a>
+            . Changes appear after an edit, with a five-minute fallback for
+            formula or automated changes. Values remain in RON and do not change
+            manually entered accounts or transactions.
+          </p>
+          <p className="helper-line">
+            Status: {sheetPaired ? "Pairing key active" : "Not connected"}
+            {data.sheetBudgets[0]
+              ? ` · Last update ${new Date(data.sheetBudgets[0].syncedAt).toLocaleString()}`
+              : " · No sheet data received yet"}
+          </p>
+          <div className="backup-actions">
+            <Button
+              disabled={sheetBusy}
+              onClick={async () => {
+                setSheetBusy(true);
+                try {
+                  const response = await fetch("/api/sheet-sync/pair", {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "X-Victor-Request": "1",
+                    },
+                    body: "{}",
+                  });
+                  if (!response.ok)
+                    throw new Error("Could not create sheet connection.");
+                  const result = (await response.json()) as { key: string };
+                  setSheetScript(
+                    appsScriptForBudget(window.location.origin, result.key),
+                  );
+                  setSheetPaired(true);
+                  notify(
+                    "Connection prepared. Install the script in the spreadsheet.",
+                  );
+                } catch (issue) {
+                  notify(
+                    issue instanceof Error
+                      ? issue.message
+                      : "Connection failed",
+                    "error",
+                  );
+                } finally {
+                  setSheetBusy(false);
+                }
+              }}
+            >
+              {sheetPaired ? "Generate new setup code" : "Connect Google Sheet"}
+            </Button>
+            {sheetPaired && (
+              <Button
+                variant="secondary"
+                disabled={sheetBusy}
+                onClick={async () => {
+                  setSheetBusy(true);
+                  try {
+                    const response = await fetch("/api/sheet-sync/disconnect", {
+                      method: "POST",
+                      credentials: "same-origin",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "X-Victor-Request": "1",
+                      },
+                      body: "{}",
+                    });
+                    if (!response.ok)
+                      throw new Error("Could not disconnect the sheet.");
+                    setSheetPaired(false);
+                    setSheetScript("");
+                    notify(
+                      "Sheet connection revoked. Existing snapshot remains visible until Money is cleared.",
+                    );
+                  } catch (issue) {
+                    notify(
+                      issue instanceof Error
+                        ? issue.message
+                        : "Disconnect failed",
+                      "error",
+                    );
+                  } finally {
+                    setSheetBusy(false);
+                  }
+                }}
+              >
+                Disconnect
+              </Button>
+            )}
+          </div>
+          {sheetScript && (
+            <div className="sheet-script-setup">
+              <ol className="chat-steps">
+                <li>
+                  In the linked spreadsheet, open Extensions → Apps Script.
+                </li>
+                <li>
+                  Replace the editor contents with the code below and save.
+                </li>
+                <li>
+                  Select <code>setupVictorSync</code> and click Run. Authorize
+                  the Google Sheets and external request permissions yourself.
+                </li>
+                <li>
+                  Return to Money and refresh. Edits will then sync
+                  automatically.
+                </li>
+              </ol>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  void navigator.clipboard
+                    .writeText(sheetScript)
+                    .then(() => notify("Setup code copied"))
+                    .catch(() => notify("Could not copy code", "error"))
+                }
+              >
+                <Copy size={16} /> Copy setup code
+              </Button>
+              <pre>
+                <code>{sheetScript}</code>
+              </pre>
+              <p className="helper-line">
+                This code contains a write-only sync key. Keep the Apps Script
+                project private. Generating new setup code revokes the old key.
+              </p>
+            </div>
+          )}
+        </Card>
         <Card className="backup-card">
           <CardHeader
             eyebrow="YOUR DATA"
@@ -547,8 +706,9 @@ export function SettingsPage({ data }: { data: AppData }) {
               <strong>Clear Money</strong>
               <p>
                 Remove all {moneyCount} accounts, debts, investments, budgets,
-                transactions, and goals from the cloud. Other sections stay as
-                they are. A complete backup downloads before confirmation.
+                transactions, goals, and the linked sheet snapshot from the
+                cloud. The sheet key is revoked. Other sections stay as they
+                are. A complete backup downloads before confirmation.
               </p>
             </div>
             <Button
@@ -652,6 +812,8 @@ export function SettingsPage({ data }: { data: AppData }) {
             await repository.replaceAll(preview.data);
             setPreview(null);
             setName(preview.data.settings[0].name);
+            setSheetPaired(false);
+            setSheetScript("");
             notify("Cloud backup restored");
           }}
         />
@@ -667,6 +829,8 @@ export function SettingsPage({ data }: { data: AppData }) {
             await repository.reset();
             setName("Victor");
             setChatConnections([]);
+            setSheetPaired(false);
+            setSheetScript("");
             notify("Database reset");
           }}
         />
@@ -686,12 +850,14 @@ export function SettingsPage({ data }: { data: AppData }) {
       {confirm === "money" && (
         <ConfirmDialog
           title="Clear all Money data?"
-          message="All accounts, debts, investments, monthly budgets, transactions, and financial goals will be removed from every device. A complete backup download was started before this confirmation. Projects, tasks, prompts, notes, playbooks, and settings will remain."
+          message="All accounts, debts, investments, monthly budgets, transactions, financial goals, and the linked sheet snapshot will be removed from every device. The sheet key will be revoked. A complete backup download was started before this confirmation. Projects, tasks, prompts, notes, playbooks, and settings will remain."
           phrase="CLEAR MONEY"
           confirmLabel="Clear Money"
           onClose={() => setConfirm(null)}
           onConfirm={async () => {
             await repository.clearMoney();
+            setSheetPaired(false);
+            setSheetScript("");
             notify("Money data cleared on every device");
           }}
         />

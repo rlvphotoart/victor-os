@@ -1,0 +1,101 @@
+import { describe, expect, it, vi } from "vitest";
+import worker from "../worker/index";
+import { appsScriptForBudget } from "../src/lib/sheet-sync";
+
+const url = "https://victor-os.example/api/sheet-sync/push";
+const sheetId = "YOUR_GOOGLE_SHEET_ID";
+const key = "a".repeat(64);
+const input = {
+  sheetId,
+  month: "2026-10",
+  salary: 8000,
+  categories: [{ name: "Chirie + utilități", planned: 3200, spent: 0 }],
+  emergencyTarget: 15000,
+  emergencyCurrent: 15000,
+  debtRemaining: null,
+};
+
+async function hash(value: string) {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value),
+  );
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
+function request(value: unknown, credential = key) {
+  return new Request(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Victor-Sync-Key": credential,
+    },
+    body: JSON.stringify(value),
+  });
+}
+
+describe("Google Sheet sync", () => {
+  it("generates valid bound Apps Script with a scoped endpoint", () => {
+    const script = appsScriptForBudget("https://victor-os.example", key);
+    expect(() => new Function(script)).not.toThrow();
+    expect(script).toContain("https://victor-os.example/api/sheet-sync/push");
+    expect(script).toContain("function setupVictorSync()");
+    expect(script).toContain("everyMinutes(5)");
+  });
+  it("accepts the paired key and stores a validated RON snapshot", async () => {
+    const run = vi.fn(async () => ({ meta: { changes: 1 } }));
+    const first = vi.fn(async () => ({
+      payload: JSON.stringify({ hash: await hash(key) }),
+    }));
+    const prepare = vi.fn((sql: string) => ({
+      bind: vi.fn(() => (sql.startsWith("SELECT") ? { first } : { run })),
+    }));
+    const env = {
+      DB: { prepare },
+      ACCESS_KEY: "x".repeat(32),
+    } as unknown as Parameters<typeof worker.fetch>[1];
+
+    const response = await worker.fetch(request(input), env);
+
+    expect(response.status, await response.clone().text()).toBe(200);
+    expect(((await response.json()) as { ok: boolean }).ok).toBe(true);
+    expect(run).toHaveBeenCalledOnce();
+    expect(prepare.mock.calls[1][0]).toContain("'sheetBudgets'");
+  });
+
+  it("rejects invalid values without overwriting the last good snapshot", async () => {
+    const run = vi.fn();
+    const first = vi.fn(async () => ({
+      payload: JSON.stringify({ hash: await hash(key) }),
+    }));
+    const prepare = vi.fn((sql: string) => ({
+      bind: vi.fn(() => (sql.startsWith("SELECT") ? { first } : { run })),
+    }));
+    const env = {
+      DB: { prepare },
+      ACCESS_KEY: "x".repeat(32),
+    } as unknown as Parameters<typeof worker.fetch>[1];
+
+    const response = await worker.fetch(request({ ...input, salary: -1 }), env);
+    expect(response.status).toBe(400);
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("rejects a wrong key before reading financial payload", async () => {
+    const first = vi.fn(async () => ({
+      payload: JSON.stringify({ hash: await hash(key) }),
+    }));
+    const bind = vi.fn(() => ({ first }));
+    const prepare = vi.fn(() => ({ bind }));
+    const env = {
+      DB: { prepare },
+      ACCESS_KEY: "x".repeat(32),
+    } as unknown as Parameters<typeof worker.fetch>[1];
+
+    const response = await worker.fetch(request(input, "b".repeat(64)), env);
+    expect(response.status).toBe(401);
+    expect(prepare).toHaveBeenCalledOnce();
+  });
+});

@@ -43,6 +43,7 @@ import {
   Select,
 } from "../components/ui";
 import { useToast } from "../components/toast";
+import { BUDGET_SHEET_URL } from "../lib/sheet-sync";
 
 type Kind = "account" | "debt" | "investment" | "transaction" | "goal";
 type Entity = Account | Debt | Investment | Transaction | Goal;
@@ -70,6 +71,8 @@ export function MoneyPage({ data }: { data: AppData }) {
   const summary = financeSummary(data, month);
   const currency = data.settings[0]?.currency ?? "EUR";
   const fmt = (value: number) => money(value, currency);
+  const syncedBudget = data.sheetBudgets[0];
+  const ron = (value: number) => money(value, "RON");
   const budgetRows = BUDGET_CATEGORIES.map((category) => {
     const budget = data.budgets.find(
       (item) => item.category === category && item.month === month,
@@ -207,6 +210,77 @@ export function MoneyPage({ data }: { data: AppData }) {
           <small>Payments / income</small>
         </Card>
       </div>
+      {syncedBudget && (
+        <Card className="sheet-budget-card">
+          <CardHeader
+            eyebrow="GOOGLE SHEETS / RON"
+            title="Buget lunar sincronizat"
+            subtitle={`${syncedBudget.month} · Actualizat ${new Date(syncedBudget.syncedAt).toLocaleString("ro-RO")}`}
+            action={
+              <a
+                href={BUDGET_SHEET_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Deschide foaia ↗
+              </a>
+            }
+          />
+          <div className="sheet-budget-metrics">
+            <div>
+              <span>Salariu planificat</span>
+              <strong>{ron(syncedBudget.salary)}</strong>
+            </div>
+            <div>
+              <span>Buget alocat</span>
+              <strong>
+                {ron(
+                  syncedBudget.categories.reduce(
+                    (sum, row) => sum + row.planned,
+                    0,
+                  ),
+                )}
+              </strong>
+            </div>
+            <div>
+              <span>Cheltuit efectiv</span>
+              <strong>
+                {ron(
+                  syncedBudget.categories.reduce(
+                    (sum, row) => sum + row.spent,
+                    0,
+                  ),
+                )}
+              </strong>
+            </div>
+            <div>
+              <span>Fond de urgență</span>
+              <strong>
+                {ron(syncedBudget.emergencyCurrent)} /{" "}
+                {ron(syncedBudget.emergencyTarget)}
+              </strong>
+            </div>
+          </div>
+          <div className="sheet-budget-rows">
+            {syncedBudget.categories.map((row) => (
+              <div key={row.name}>
+                <strong>{row.name}</strong>
+                <span>{ron(row.planned)} buget</span>
+                <span>{ron(row.spent)} cheltuit</span>
+              </div>
+            ))}
+          </div>
+          {syncedBudget.debtRemaining !== null && (
+            <p className="helper-line">
+              Sold datorii la final de lună: {ron(syncedBudget.debtRemaining)}
+            </p>
+          )}
+          <p className="helper-line">
+            Aceste valori vin din foaia Google și sunt separate de conturile și
+            tranzacțiile introduse manual în Money.
+          </p>
+        </Card>
+      )}
       <div className="section-toolbar money-toolbar">
         <div className="tab-scroll">
           <div className="segmented">

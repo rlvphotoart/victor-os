@@ -7,7 +7,7 @@ A private personal command center for projects, tasks, finances, prompts, notes,
 - Home dashboard with priorities, financial position, projects, and quick access to playbooks.
 - Tasks with Today and board views, filters, sorting, drag and drop, and editing.
 - Projects with status, priority, progress, notes, next action, and links.
-- Money with manual accounts, debts, investments, transactions, budgets, goals, and monthly charts. There is no bank connection.
+- Money with manual accounts, debts, investments, transactions, budgets, goals, and monthly charts, plus a separate Google Sheets budget snapshot in RON. There is no bank connection.
 - AI Lab with 22 reusable prompts, search, favorites, duplication, version history, and an editable model cost calculator.
 - Model cost reference with researched, dated source links, provider filters, and explicit unpriced entries for Paperclip and Hermès. Estimates use standard direct API text-token rates in USD and exclude caching, long context, tools, tax, and subscription billing.
 - Playbooks with reusable checklists for weekly planning, release readiness, validation evidence, defect triage, and AI pilots.
@@ -78,6 +78,20 @@ For finance, the connector only records completed transactions. It never moves m
 
 ## Run locally
 
+## Sync the monthly Google Sheet
+
+The private spreadsheet `your budget workbook`, tab `Buget lunar` (`gid=1676910216`), can push B2 (planned salary), B3 (month), A5:C9 (five budget categories and actual spending), B12:B13 (emergency fund), and optional B15 (end-of-month debt balance) into Money. Victor OS displays this as a clearly labeled RON snapshot. It does not infer account balances, create transactions, convert currencies, or blend planned salary with received income. The sheet remains the source of truth.
+
+1. Deploy this version of Victor OS and sign in.
+2. In Settings → Sync your monthly budget, click **Connect Google Sheet**. This creates a random write-only sync key; the Worker stores only its SHA-256 hash.
+3. Click **Copy setup code**. In the linked Google Sheet, open Extensions → Apps Script, replace the editor code, paste, and save.
+4. Select `setupVictorSync` and click Run. Complete Google's authorization in your own browser. The function installs an edit trigger and a five-minute time trigger, then sends the current values immediately.
+5. Refresh Money. The last update time and synced values should appear. Subsequent direct cell edits trigger sync; formula recalculations and script/API changes are picked up by the timer within roughly five minutes.
+
+The Apps Script project must stay private because the generated code contains the sync key. **Disconnect** revokes the key. **Generate new setup code** rotates it and requires replacing the code in Apps Script and rerunning `setupVictorSync`. **Clear Money** removes the snapshot and revokes the key. JSON backup includes the snapshot, but never the sync key. Restoring a backup does not restore a live connection; pair again afterward. The sheet is never made public and no Google API key or paid service is needed. Google's [installable triggers](https://developers.google.com/apps-script/guides/triggers/installable) and [Apps Script quotas](https://developers.google.com/apps-script/guides/services/quotas) apply.
+
+## Run locally
+
 Use Node.js 22.16 or later. The repository has a .node-version file.
 
     npm ci
@@ -125,7 +139,7 @@ The older browser data remains in its original browser until you choose to remov
 
 ## Backup and recovery
 
-Settings → Export all data downloads victor-os-backup-YYYY-MM-DD.json. It includes every record and setting, including prompt versions, model source metadata, legacy links, and playbooks. Imports accept both schema v1 and v2, validate format, IDs, record structures, and URLs, show a preview, then require RESTORE. The replacement runs as one D1 transaction. Settings → Clear Money starts a full backup download, then requires CLEAR MONEY before removing accounts, debts, investments, budgets, transactions, and goals on every device. It preserves every other collection and does not re-seed demo Money data. Reset database requires RESET VICTOR OS and applies to every device. Clear demo data deliberately excludes Money and Notes.
+Settings → Export all data downloads victor-os-backup-YYYY-MM-DD.json. It includes every record and setting, including prompt versions, model source metadata, legacy links, playbooks, and the last Google Sheet budget snapshot. Imports accept both schema v1 and v2, validate format, IDs, record structures, and URLs, show a preview, then require RESTORE. The replacement runs as one D1 transaction. Settings → Clear Money starts a full backup download, then requires CLEAR MONEY before removing accounts, debts, investments, budgets, transactions, goals, and the Google Sheet snapshot on every device; it also revokes the sheet sync key. It preserves every other collection and does not re-seed demo Money data. Reset database requires RESET VICTOR OS and applies to every device. Clear demo data deliberately excludes Money and Notes.
 
 Backups contain financial and other private information. Store them privately. D1 Time Travel may provide additional recovery, but regular JSON exports remain the portable backup.
 
