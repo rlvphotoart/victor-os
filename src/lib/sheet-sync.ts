@@ -24,6 +24,56 @@ function victorNumber(value, cell) {
   return value;
 }
 
+function victorRequiredNumber(value, cell, positive) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || (positive ? value <= 0 : value < 0))
+    throw new Error(cell + ' must contain a ' + (positive ? 'positive' : 'non-negative') + ' number.');
+  return value;
+}
+
+function victorXtb(spreadsheet) {
+  const sheet = spreadsheet.getSheetByName('Investiții XTB');
+  if (!sheet) throw new Error('The Investiții XTB tab was not found.');
+  const rows = sheet.getRange('A8:F107').getValues();
+  const dates = sheet.getRange('J8:J107').getDisplayValues();
+  const positions = rows.flatMap((row, index) => {
+    if (row.every(value => value === '' || value === null)) return [];
+    const line = index + 8;
+    const instrument = String(row[0]).trim();
+    const symbol = String(row[1]).trim();
+    const currency = String(row[2]).trim().toUpperCase();
+    if (!instrument || !currency) throw new Error('Complete the instrument and currency in XTB row ' + line + '.');
+    return [{
+      instrument, symbol, currency,
+      invested: victorRequiredNumber(row[3], 'XTB D' + line, false),
+      current: victorRequiredNumber(row[4], 'XTB E' + line, false),
+      fxRon: victorRequiredNumber(row[5], 'XTB F' + line, true),
+      updatedAt: dates[index][0] || null,
+    }];
+  });
+  const cash = sheet.getRange('B3').getValue();
+  return {
+    asOf: sheet.getRange('B2').getDisplayValue() || null,
+    cashRon: cash === '' ? null : victorNumber(cash, 'XTB B3'),
+    positions,
+  };
+}
+
+function victorHistory(spreadsheet) {
+  const sheet = spreadsheet.getSheetByName('Istoric 12 luni');
+  if (!sheet) throw new Error('The Istoric 12 luni tab was not found.');
+  const values = sheet.getRange('A2:N13').getValues();
+  const dates = sheet.getRange('A2:A13').getDisplayValues();
+  return values.flatMap((row, index) => {
+    if (!dates[index][0]) return [];
+    return [{
+      month: victorMonth(dates[index][0]),
+      income: victorNumber(row[1], 'Istoric B' + (index + 2)),
+      spent: victorNumber(row[12], 'Istoric M' + (index + 2)),
+      remaining: row[13] === '' ? victorNumber(row[1], 'Istoric B' + (index + 2)) - victorNumber(row[12], 'Istoric M' + (index + 2)) : row[13],
+    }];
+  });
+}
+
 function syncVictorBudget() {
   const syncKey = PropertiesService.getScriptProperties().getProperty('VICTOR_SYNC_KEY');
   if (!syncKey) throw new Error('Set VICTOR_SYNC_KEY in Project Settings > Script properties.');
@@ -47,6 +97,8 @@ function syncVictorBudget() {
     emergencyTarget: victorNumber(sheet.getRange('B12').getValue(), 'B12'),
     emergencyCurrent: victorNumber(sheet.getRange('B13').getValue(), 'B13'),
     debtRemaining: debtCell === '' ? null : victorNumber(debtCell, 'B15'),
+    history: victorHistory(spreadsheet),
+    xtb: victorXtb(spreadsheet),
   };
   const response = UrlFetchApp.fetch(VICTOR_SYNC_URL, {
     method: 'post',
@@ -60,7 +112,7 @@ function syncVictorBudget() {
 }
 
 function victorBudgetEdited(event) {
-  if (event && event.range && event.range.getSheet().getName() === 'Buget lunar') syncVictorBudget();
+  if (event && event.range && ['Buget lunar', 'Investiții XTB'].includes(event.range.getSheet().getName())) syncVictorBudget();
 }
 
 function setupVictorSync() {

@@ -8,7 +8,7 @@ import {
   Plus,
 } from "lucide-react";
 import type { AppData } from "../types";
-import { financeSummary } from "../lib/finance";
+import { sheetMoneySummary } from "../lib/sheet-finance";
 import { dateLabel, money, today } from "../lib/utils";
 import { Datum, Metric, StatusSignal } from "../components/OS";
 import { DemoTag } from "../components/ui";
@@ -20,8 +20,8 @@ export function DashboardPage({ data }: { data: AppData }) {
     "projects",
     "quickLinks",
   ];
-  const currency = data.settings[0]?.currency ?? "EUR";
-  const summary = financeSummary(data);
+  const sheet = data.sheetBudgets[0];
+  const summary = sheetMoneySummary(sheet);
   const name = data.settings[0]?.name || "Victor";
   const hour = new Date().getHours();
   const greeting =
@@ -39,9 +39,9 @@ export function DashboardPage({ data }: { data: AppData }) {
   const active = data.projects.filter((item) => item.status === "ACTIVE");
   const blocked = data.projects.filter((item) => item.status === "BLOCKED");
   const next = priorities[0] ?? upcoming[0] ?? openTasks[0];
-  const netNumber = new Intl.NumberFormat("en-IE", {
+  const remainingNumber = new Intl.NumberFormat("ro-RO", {
     maximumFractionDigits: 0,
-  }).format(summary.net);
+  }).format(summary?.remaining ?? 0);
   const hasDemo = Object.values(data)
     .flat()
     .some(
@@ -158,14 +158,14 @@ export function DashboardPage({ data }: { data: AppData }) {
               }
             />
             <Metric
-              label="NET / ASSETS LESS DEBT"
-              value={netNumber}
-              unit={currency}
+              label="RĂMAS DIN SALARIU / GOOGLE SHEETS"
+              value={sheet ? remainingNumber : "—"}
+              unit={sheet ? "RON" : undefined}
               large
               annotation={
                 <span>
-                  ASSETS {money(summary.assets, currency)} <i /> DEBT{" "}
-                  {money(summary.debt, currency)}
+                  SALARIU {sheet ? money(sheet.salary, "RON") : "—"} <i />{" "}
+                  CHELTUIT {summary ? money(summary.spent, "RON") : "—"}
                 </span>
               }
             />
@@ -175,10 +175,7 @@ export function DashboardPage({ data }: { data: AppData }) {
                   key={index}
                   className={
                     index <
-                    Math.round(
-                      (Math.max(0, Math.min(100, summary.savingsRate)) / 100) *
-                        24,
-                    )
+                    Math.round(((summary?.spentPercent ?? 0) / 100) * 24)
                       ? "filled"
                       : ""
                   }
@@ -187,18 +184,22 @@ export function DashboardPage({ data }: { data: AppData }) {
             </div>
             <div className="vos-finance-bottom">
               <span>
-                <small>CASH</small>
+                <small>FOND URGENȚĂ</small>
                 <strong>
-                  {money(summary.current + summary.emergency, currency)}
+                  {sheet ? money(sheet.emergencyCurrent, "RON") : "—"}
                 </strong>
               </span>
               <span>
-                <small>INVESTED</small>
-                <strong>{money(summary.investments, currency)}</strong>
+                <small>XTB</small>
+                <strong>
+                  {summary?.xtbValue == null
+                    ? "—"
+                    : money(summary.xtbValue, "RON")}
+                </strong>
               </span>
               <span>
-                <small>SAVINGS RATE</small>
-                <strong>{Math.round(summary.savingsRate)}%</strong>
+                <small>LUNA</small>
+                <strong>{sheet?.month ?? "—"}</strong>
               </span>
             </div>
           </div>

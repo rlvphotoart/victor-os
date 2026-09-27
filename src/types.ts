@@ -84,6 +84,25 @@ export interface SheetBudget {
   emergencyTarget: number;
   emergencyCurrent: number;
   debtRemaining: number | null;
+  history?: {
+    month: string;
+    income: number;
+    spent: number;
+    remaining: number;
+  }[];
+  xtb?: {
+    asOf: string | null;
+    cashRon: number | null;
+    positions: {
+      instrument: string;
+      symbol: string;
+      currency: string;
+      invested: number;
+      current: number;
+      fxRon: number;
+      updatedAt: string | null;
+    }[];
+  };
   syncedAt: string;
 }
 export interface PromptVersion {

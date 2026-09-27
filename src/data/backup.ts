@@ -98,6 +98,36 @@ const sheetBudget = z.object({
   emergencyTarget: z.number().finite().nonnegative(),
   emergencyCurrent: z.number().finite().nonnegative(),
   debtRemaining: z.number().finite().nonnegative().nullable(),
+  history: z
+    .array(
+      z.object({
+        month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+        income: z.number().finite().nonnegative(),
+        spent: z.number().finite().nonnegative(),
+        remaining: z.number().finite(),
+      }),
+    )
+    .max(12)
+    .optional(),
+  xtb: z
+    .object({
+      asOf: z.string().max(40).nullable(),
+      cashRon: z.number().finite().nonnegative().nullable(),
+      positions: z
+        .array(
+          z.object({
+            instrument: z.string().min(1).max(120),
+            symbol: z.string().max(40),
+            currency: z.string().min(1).max(10),
+            invested: z.number().finite().nonnegative(),
+            current: z.number().finite().nonnegative(),
+            fxRon: z.number().finite().positive(),
+            updatedAt: z.string().max(40).nullable(),
+          }),
+        )
+        .max(100),
+    })
+    .optional(),
   syncedAt: z.string().datetime(),
 });
 const promptVersion = z.object({

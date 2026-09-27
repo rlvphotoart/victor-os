@@ -481,9 +481,9 @@ export function SettingsPage({ data }: { data: AppData }) {
             >
               Buget lunar — Salariu 10
             </a>
-            . Changes appear after an edit, with a five-minute fallback for
-            formula or automated changes. Values remain in RON and do not change
-            manually entered accounts or transactions.
+            . Money uses the budget, saved history and XTB positions from this
+            Sheet only. Changes appear after an edit, with a five-minute
+            fallback for formula or automated changes. Values are shown in RON.
           </p>
           <p className="helper-line">
             This Google Sheet currently allows anyone with its link to view it.
@@ -582,9 +582,9 @@ export function SettingsPage({ data }: { data: AppData }) {
                   In the linked spreadsheet, open Extensions → Apps Script.
                 </li>
                 <li>
-                  Copy the setup code below, append it after the existing
-                  <code> Cod.gs </code> code, and save. Keep the existing
-                  month-history functions.
+                  Copy the setup code below. Keep the existing month-history
+                  functions in <code>Cod.gs</code>. On first setup, append the
+                  Victor block; on an upgrade, replace the old Victor block.
                 </li>
                 <li>
                   In Project Settings → Script properties, add{" "}

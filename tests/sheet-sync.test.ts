@@ -13,6 +13,24 @@ const input = {
   emergencyTarget: 15000,
   emergencyCurrent: 15000,
   debtRemaining: null,
+  history: [
+    { month: "2026-09", income: 8000, spent: 5300, remaining: 2700 },
+  ],
+  xtb: {
+    asOf: null,
+    cashRon: null,
+    positions: [
+      {
+        instrument: "ETF",
+        symbol: "ETF",
+        currency: "EUR",
+        invested: 100,
+        current: 110,
+        fxRon: 5,
+        updatedAt: null,
+      },
+    ],
+  },
 };
 
 async function hash(value: string) {
@@ -44,6 +62,8 @@ describe("Google Sheet sync", () => {
     expect(script).toContain("function setupVictorSync()");
     expect(script).toContain("everyMinutes(5)");
     expect(script).toContain("getProperty('VICTOR_SYNC_KEY')");
+    expect(script).toContain("Investiții XTB");
+    expect(script).toContain("Istoric 12 luni");
     expect(script).not.toContain(key);
   });
   it("accepts the paired key and stores a validated RON snapshot", async () => {
@@ -81,6 +101,27 @@ describe("Google Sheet sync", () => {
     } as unknown as Parameters<typeof worker.fetch>[1];
 
     const response = await worker.fetch(request({ ...input, salary: -1 }), env);
+    expect(response.status).toBe(400);
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid XTB conversion rates", async () => {
+    const run = vi.fn();
+    const first = vi.fn(async () => ({
+      payload: JSON.stringify({ hash: await hash(key) }),
+    }));
+    const prepare = vi.fn((sql: string) => ({
+      bind: vi.fn(() => (sql.startsWith("SELECT") ? { first } : { run })),
+    }));
+    const env = {
+      DB: { prepare },
+      ACCESS_KEY: "x".repeat(32),
+    } as unknown as Parameters<typeof worker.fetch>[1];
+    const xtb = {
+      ...input.xtb,
+      positions: [{ ...input.xtb.positions[0], fxRon: 0 }],
+    };
+    const response = await worker.fetch(request({ ...input, xtb }), env);
     expect(response.status).toBe(400);
     expect(run).not.toHaveBeenCalled();
   });
