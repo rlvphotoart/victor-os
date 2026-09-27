@@ -1,4 +1,6 @@
 import {
+  useEffect,
+  useRef,
   useState,
   type FormEvent,
   type InputHTMLAttributes,
@@ -204,6 +206,47 @@ export function Modal({
   onClose: () => void;
   width?: "normal" | "wide";
 }) {
+  const dialog = useRef<HTMLElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const previous =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const preferred = dialog.current?.querySelector<HTMLElement>("[autofocus]");
+    const first = dialog.current?.querySelector<HTMLElement>(
+      ".modal-body input, .modal-body textarea, .modal-body select, .modal-body button, .modal-header button",
+    );
+    (preferred ?? first)?.focus();
+    const keydown = (event: KeyboardEvent) => {
+      const openDialogs = document.querySelectorAll('[role="dialog"]');
+      if (openDialogs[openDialogs.length - 1] !== dialog.current) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeRef.current();
+      }
+      if (event.key !== "Tab") return;
+      const focusable = dialog.current?.querySelectorAll<HTMLElement>(
+        "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href]",
+      );
+      if (!focusable?.length) return;
+      const beginning = focusable[0];
+      const end = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === beginning) {
+        event.preventDefault();
+        end.focus();
+      } else if (!event.shiftKey && document.activeElement === end) {
+        event.preventDefault();
+        beginning.focus();
+      }
+    };
+    window.addEventListener("keydown", keydown);
+    return () => {
+      window.removeEventListener("keydown", keydown);
+      previous?.focus();
+    };
+  }, []);
   return (
     <div
       className="modal-backdrop"
@@ -213,6 +256,7 @@ export function Modal({
       role="presentation"
     >
       <section
+        ref={dialog}
         className={classNames("modal", width === "wide" && "modal-wide")}
         role="dialog"
         aria-modal="true"

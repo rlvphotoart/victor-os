@@ -330,6 +330,7 @@ export function DashboardPage({ data }: { data: AppData }) {
             {data.links.length ? (
               <div className="dashboard-link-grid">
                 {[...data.links]
+                  .filter((item) => safeUrl(item.url))
                   .sort((a, b) => a.order - b.order)
                   .slice(0, 6)
                   .map((item) => {
@@ -337,7 +338,7 @@ export function DashboardPage({ data }: { data: AppData }) {
                     return (
                       <a
                         key={item.id}
-                        href={safeUrl(item.url) ?? "#"}
+                        href={safeUrl(item.url)!}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

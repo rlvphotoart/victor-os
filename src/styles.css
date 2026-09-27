@@ -2,48 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
-  --bg: #0b0d10;
-  --sidebar: #0f1215;
-  --panel: #14181c;
-  --panel2: #191e22;
-  --panel3: #1e2428;
-  --border: #293036;
-  --border-soft: #22282d;
-  --text: #ecf2ef;
-  --muted: #89969a;
-  --faint: #66747a;
-  --accent: #a5ebc9;
-  --accent-strong: #72dcb0;
-  --accent-bg: rgba(119, 222, 174, 0.11);
-  --red: #f2a6a6;
-  --amber: #ebc289;
-  --blue: #9ec9e8;
-  --purple: #c9b6f2;
-  --shadow: 0 18px 60px rgba(0, 0, 0, 0.22);
-}
-:root[data-theme="light"] {
-  color-scheme: light;
-  --bg: #f4f6f5;
-  --sidebar: #eef1f0;
-  --panel: #fff;
-  --panel2: #f6f8f7;
-  --panel3: #edf1ef;
-  --border: #dce4df;
-  --border-soft: #e7ece9;
-  --text: #1b2722;
-  --muted: #60716a;
-  --faint: #84948c;
-  --accent: #147b54;
-  --accent-strong: #0d8354;
-  --accent-bg: rgba(20, 123, 84, 0.09);
-  --red: #b54141;
-  --amber: #996412;
-  --blue: #386c95;
-  --purple: #7656a8;
-  --shadow: 0 15px 40px rgba(25, 56, 41, 0.08);
-}
 * {
   box-sizing: border-box;
 }

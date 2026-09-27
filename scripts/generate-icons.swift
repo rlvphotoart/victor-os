@@ -9,7 +9,7 @@ func generate(size: Int, filename: String) throws {
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = context
     let s = CGFloat(size)
-    NSColor(calibratedRed: 0.06, green: 0.075, blue: 0.085, alpha: 1).setFill()
+    NSColor(calibratedRed: 0.09, green: 0.10, blue: 0.125, alpha: 1).setFill()
     NSBezierPath(roundedRect: NSRect(x: 0, y: 0, width: s, height: s), xRadius: s * 0.22, yRadius: s * 0.22).fill()
     let v = NSBezierPath()
     v.move(to: NSPoint(x: s * 0.25, y: s * 0.73))
@@ -18,10 +18,9 @@ func generate(size: Int, filename: String) throws {
     v.lineWidth = s * 0.085
     v.lineCapStyle = .round
     v.lineJoinStyle = .round
-    let accent = NSColor(calibratedRed: 0.65, green: 0.93, blue: 0.79, alpha: 1)
-    accent.setStroke()
+    NSColor(calibratedRed: 0.93, green: 0.94, blue: 0.95, alpha: 1).setStroke()
     v.stroke()
-    accent.setFill()
+    NSColor(calibratedRed: 0.57, green: 0.64, blue: 0.96, alpha: 1).setFill()
     NSBezierPath(ovalIn: NSRect(x: s * 0.73, y: s * 0.22, width: s * 0.08, height: s * 0.08)).fill()
     context.flushGraphics()
     NSGraphicsContext.restoreGraphicsState()

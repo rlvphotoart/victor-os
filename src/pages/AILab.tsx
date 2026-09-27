@@ -40,6 +40,7 @@ export function AILabPage({ data }: { data: AppData }) {
   const [tool, setTool] = useState("all");
   const [category, setCategory] = useState("all");
   const [favorites, setFavorites] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const notify = useToast();
   const editing = data.prompts.find((item) => item.id === params.get("open"));
@@ -79,6 +80,18 @@ export function AILabPage({ data }: { data: AppData }) {
       demo: false,
     });
     notify("Prompt duplicated");
+  };
+  const copyPrompt = async (prompt: Prompt) => {
+    try {
+      await copyText(prompt.prompt);
+      setCopiedId(prompt.id);
+      window.setTimeout(
+        () => setCopiedId((value) => (value === prompt.id ? null : value)),
+        1600,
+      );
+    } catch {
+      notify("Clipboard is unavailable", "error");
+    }
   };
   return (
     <div className="page-stack">
@@ -204,16 +217,15 @@ export function AILabPage({ data }: { data: AppData }) {
                   <div className="prompt-card-actions">
                     <Button
                       variant="secondary"
-                      onClick={async () => {
-                        try {
-                          await copyText(item.prompt);
-                          notify("Prompt copied");
-                        } catch {
-                          notify("Clipboard is unavailable", "error");
-                        }
-                      }}
+                      className={copiedId === item.id ? "copied" : ""}
+                      onClick={() => copyPrompt(item)}
                     >
-                      <Copy size={15} /> Copy prompt
+                      {copiedId === item.id ? (
+                        <Check size={15} />
+                      ) : (
+                        <Copy size={15} />
+                      )}
+                      {copiedId === item.id ? "Copied" : "Copy prompt"}
                     </Button>
                     <button onClick={() => setParams({ open: item.id })}>
                       Edit

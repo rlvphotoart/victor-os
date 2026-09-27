@@ -24,10 +24,24 @@ type Result = {
   kind: string;
   title: string;
   subtitle: string;
+  section?: string;
   path?: string;
   url?: string;
   icon: typeof Home;
 };
+const recentKey = "victor-os-recent-commands";
+function loadRecent(): string[] {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(recentKey) || "[]");
+    return Array.isArray(value)
+      ? value
+          .filter((item): item is string => typeof item === "string")
+          .slice(0, 5)
+      : [];
+  } catch {
+    return [];
+  }
+}
 
 export function CommandPalette({
   data,
@@ -39,8 +53,19 @@ export function CommandPalette({
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
+  const [recent, setRecent] = useState(loadRecent);
   const input = useRef<HTMLInputElement>(null);
-  useEffect(() => input.current?.focus(), []);
+  const palette = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previous =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    input.current?.focus();
+    return () => {
+      previous?.focus();
+    };
+  }, []);
   const results = useMemo(() => {
     const pages: Result[] = [
       {
@@ -150,14 +175,16 @@ export function CommandPalette({
         path: `/notes?open=${item.id}`,
         icon: NotebookPen,
       })),
-      ...data.links.map((item) => ({
-        key: `link-${item.id}`,
-        kind: "LINK",
-        title: item.name,
-        subtitle: item.category,
-        url: safeUrl(item.url) ?? undefined,
-        icon: Link2,
-      })),
+      ...data.links
+        .filter((item) => safeUrl(item.url))
+        .map((item) => ({
+          key: `link-${item.id}`,
+          kind: "LINK",
+          title: item.name,
+          subtitle: item.category,
+          url: safeUrl(item.url) ?? undefined,
+          icon: Link2,
+        })),
       ...TOOLS.map((item) => ({
         key: `tool-${item.id}`,
         kind: "TOOL",
@@ -168,17 +195,55 @@ export function CommandPalette({
       })),
     ];
     const term = query.trim().toLowerCase();
-    return (
-      term
-        ? all.filter((item) =>
-            `${item.title} ${item.subtitle} ${item.kind}`
-              .toLowerCase()
-              .includes(term),
-          )
-        : all.filter((item) => item.kind === "PAGE")
-    ).slice(0, 12);
-  }, [data, query]);
+    if (term) {
+      return all
+        .filter((item) =>
+          `${item.title} ${item.subtitle} ${item.kind}`
+            .toLowerCase()
+            .includes(term),
+        )
+        .slice(0, 14)
+        .map((item) => ({
+          ...item,
+          section: item.kind === "PAGE" ? "PAGES" : `${item.kind}S`,
+        }));
+    }
+    const recentItems = recent
+      .map((key) => all.find((item) => item.key === key))
+      .filter((item): item is Result => Boolean(item))
+      .map((item) => ({ ...item, section: "RECENT" }));
+    const chosen = new Set(recentItems.map((item) => item.key));
+    return [
+      ...recentItems,
+      ...pages
+        .filter((item) => !chosen.has(item.key))
+        .map((item) => ({ ...item, section: "NAVIGATION" })),
+      ...all
+        .filter((item) => item.kind === "TOOL" && !chosen.has(item.key))
+        .slice(0, 3)
+        .map((item) => ({ ...item, section: "UTILITIES" })),
+    ].slice(0, 14);
+  }, [data, query, recent]);
+  const groups = results.reduce<
+    { name: string; items: { item: Result; index: number }[] }[]
+  >((acc, item, index) => {
+    const name = item.section ?? item.kind;
+    const group = acc.find((entry) => entry.name === name);
+    if (group) group.items.push({ item, index });
+    else acc.push({ name, items: [{ item, index }] });
+    return acc;
+  }, []);
   const activate = (item: Result) => {
+    const next = [item.key, ...recent.filter((key) => key !== item.key)].slice(
+      0,
+      5,
+    );
+    setRecent(next);
+    try {
+      localStorage.setItem(recentKey, JSON.stringify(next));
+    } catch {
+      /* private browsing fallback */
+    }
     if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
     else if (item.path) navigate(item.path);
     onClose();
@@ -192,17 +257,43 @@ export function CommandPalette({
       role="presentation"
     >
       <div
+        ref={palette}
         className="palette"
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
+        onKeyDown={(event) => {
+          if (event.key !== "Tab") return;
+          const elements = palette.current?.querySelectorAll<HTMLElement>(
+            "button:not([disabled]), input:not([disabled])",
+          );
+          if (!elements?.length) return;
+          const first = elements[0];
+          const last = elements[elements.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }}
       >
+        <div className="palette-heading">
+          <span className="palette-mark">
+            V<span>.</span>
+          </span>
+          <span>
+            VICTOR OS <small>COMMAND CENTER</small>
+          </span>
+          <kbd>ESC</kbd>
+        </div>
         <div className="palette-search">
           <Search size={20} />
           <input
             ref={input}
             value={query}
-            placeholder="Search pages, projects, tasks, prompts..."
+            placeholder="Search anything in your workspace…"
             onChange={(event) => {
               setQuery(event.target.value);
               setSelected(0);
@@ -224,28 +315,30 @@ export function CommandPalette({
             <X size={18} />
           </button>
         </div>
-        <div className="palette-label">
-          {query ? `${results.length} RESULTS` : "QUICK NAVIGATION"}
-        </div>
         <div className="palette-results">
           {results.length ? (
-            results.map((item, index) => (
-              <button
-                key={item.key}
-                className={`palette-result ${selected === index ? "selected" : ""}`}
-                onMouseEnter={() => setSelected(index)}
-                onClick={() => activate(item)}
-              >
-                <span className="palette-result-icon">
-                  <item.icon size={18} />
-                </span>
-                <span className="palette-result-copy">
-                  <strong>{item.title}</strong>
-                  <small>{item.subtitle}</small>
-                </span>
-                <span className="palette-kind">{item.kind}</span>
-                <ArrowRight size={15} />
-              </button>
+            groups.map((group) => (
+              <div className="palette-group" key={group.name}>
+                <div className="palette-label">{group.name}</div>
+                {group.items.map(({ item, index }) => (
+                  <button
+                    key={item.key}
+                    className={`palette-result ${selected === index ? "selected" : ""}`}
+                    onMouseEnter={() => setSelected(index)}
+                    onClick={() => activate(item)}
+                  >
+                    <span className="palette-result-icon">
+                      <item.icon size={18} />
+                    </span>
+                    <span className="palette-result-copy">
+                      <strong>{item.title}</strong>
+                      <small>{item.subtitle}</small>
+                    </span>
+                    <span className="palette-kind">{item.kind}</span>
+                    <ArrowRight size={15} />
+                  </button>
+                ))}
+              </div>
             ))
           ) : (
             <div className="palette-empty">

@@ -65,6 +65,7 @@ export function MoneyPage({ data }: { data: AppData }) {
     null,
   );
   const [month, setMonth] = useState(monthKey());
+  const [chartActive, setChartActive] = useState(5);
   const notify = useToast();
   const summary = financeSummary(data, month);
   const currency = data.settings[0]?.currency ?? "EUR";
@@ -218,12 +219,35 @@ export function MoneyPage({ data }: { data: AppData }) {
                 <i className="legend-expense" /> Expenses
               </span>
             </div>
-            <div className="bar-chart">
-              {chart.map((item) => (
-                <div
+            <div className="chart-readout" aria-live="polite">
+              <span>
+                {format(
+                  new Date(`${chart[chartActive].key}-01T12:00:00`),
+                  "MMMM yyyy",
+                )}
+              </span>
+              <strong>
+                {fmt(chart[chartActive].income)} <small>in</small>
+              </strong>
+              <strong>
+                {fmt(chart[chartActive].expenses)} <small>out</small>
+              </strong>
+            </div>
+            <div
+              className="bar-chart"
+              aria-label="Income and expenses over the last six months"
+            >
+              {chart.map((item, index) => (
+                <button
                   key={item.key}
-                  className="bar-group"
+                  type="button"
+                  className={`bar-group ${chartActive === index ? "active" : ""}`}
                   title={`${item.label}: income ${fmt(item.income)}, expenses ${fmt(item.expenses)}`}
+                  aria-label={`${item.label}: income ${fmt(item.income)}, expenses ${fmt(item.expenses)}`}
+                  aria-pressed={chartActive === index}
+                  onMouseEnter={() => setChartActive(index)}
+                  onFocus={() => setChartActive(index)}
+                  onClick={() => setChartActive(index)}
                 >
                   <div className="bars">
                     <div
@@ -240,7 +264,7 @@ export function MoneyPage({ data }: { data: AppData }) {
                     />
                   </div>
                   <span>{item.label}</span>
-                </div>
+                </button>
               ))}
             </div>
           </Card>

@@ -1,20 +1,21 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  Activity,
   ArrowUpRight,
   Boxes,
   CircleDollarSign,
-  Command,
   Home,
   LayoutGrid,
   Link2,
+  ListTodo,
   Menu,
   NotebookPen,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
   Search,
   Settings2,
   Sparkles,
-  ListTodo,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { AppData } from "../types";
@@ -23,21 +24,24 @@ import { classNames } from "../lib/utils";
 
 const navigation = [
   { path: "/", label: "Dashboard", icon: Home },
-  { path: "/money", label: "Money", icon: CircleDollarSign },
-  { path: "/projects", label: "Projects", icon: Boxes },
   { path: "/tasks", label: "Tasks", icon: ListTodo },
+  { path: "/projects", label: "Projects", icon: Boxes },
+  { path: "/money", label: "Money", icon: CircleDollarSign },
   { path: "/ai-lab", label: "AI Lab", icon: Sparkles },
   { path: "/notes", label: "Notes", icon: NotebookPen },
   { path: "/toolbox", label: "Toolbox", icon: LayoutGrid },
   { path: "/links", label: "Links", icon: Link2 },
   { path: "/settings", label: "Settings", icon: Settings2 },
 ];
-const mobileNavigation = [
-  navigation[0],
-  navigation[3],
-  navigation[2],
-  navigation[1],
-];
+const compactPreference = "victor-os-sidebar-compact";
+
+function getCompactPreference() {
+  try {
+    return window.localStorage.getItem(compactPreference) === "true";
+  } catch {
+    return false;
+  }
+}
 
 export function Shell({
   data,
@@ -47,20 +51,32 @@ export function Shell({
   children: ReactNode;
 }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [compact, setCompact] = useState(getCompactPreference);
   const location = useLocation();
   const navigate = useNavigate();
-  const settings = data.settings[0];
-  const isHome = location.pathname === "/";
   const current = navigation.find((item) => item.path === location.pathname);
+  const isHome = location.pathname === "/";
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const shortcut = /Mac|iPhone|iPad/.test(navigator.userAgent)
+    ? "⌘ K"
+    : "Ctrl K";
+  const dueTasks = data.tasks.filter(
+    (task) =>
+      task.status !== "Done" &&
+      task.dueDate &&
+      task.dueDate <= format(new Date(), "yyyy-MM-dd"),
+  ).length;
+  const activeProjects = data.projects
+    .filter((project) => project.status === "ACTIVE")
+    .slice(0, 3);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        setPaletteOpen((current) => !current);
+        setPaletteOpen((open) => !open);
       }
       if (event.key === "Escape") setPaletteOpen(false);
     };
@@ -68,54 +84,110 @@ export function Shell({
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  useEffect(() => {
+    document.title = `${current?.label ?? "More"} — Victor OS`;
+    setPaletteOpen(false);
+  }, [current?.label, location.pathname]);
+
+  const toggleCompact = () => {
+    setCompact((value) => {
+      try {
+        window.localStorage.setItem(compactPreference, String(!value));
+      } catch {
+        /* session-only fallback */
+      }
+      return !value;
+    });
+  };
+
+  const renderNav = (items: typeof navigation) =>
+    items.map((item) => (
+      <NavLink
+        key={item.path}
+        to={item.path}
+        end={item.path === "/"}
+        title={compact ? item.label : undefined}
+        className={({ isActive }) =>
+          classNames("side-link", isActive && "active")
+        }
+      >
+        <item.icon size={18} strokeWidth={1.75} aria-hidden="true" />
+        <span className="side-link-label">{item.label}</span>
+        {item.path === "/tasks" && dueTasks > 0 && (
+          <span className="nav-count" aria-label={`${dueTasks} due tasks`}>
+            {dueTasks}
+          </span>
+        )}
+      </NavLink>
+    ));
+
   return (
-    <div className="app-shell">
+    <div className={classNames("app-shell", compact && "sidebar-compact")}>
       <aside className="sidebar">
-        <button
-          className="brand"
-          onClick={() => navigate("/")}
-          aria-label="Victor OS dashboard"
-        >
-          <span className="brand-icon">
-            V<span>.</span>
-          </span>
-          <span>
-            <strong>VICTOR OS</strong>
-            <small>PERSONAL COMMAND CENTER</small>
-          </span>
-        </button>
-        <div className="sidebar-caption">WORKSPACE</div>
-        <nav className="side-nav" aria-label="Main navigation">
-          {navigation.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === "/"}
-              className={({ isActive }) =>
-                classNames("side-link", isActive && "active")
-              }
-            >
-              <item.icon size={18} strokeWidth={1.8} />
-              {item.label}
-              {item.path === "/tasks" &&
-                data.tasks.filter(
-                  (task) =>
-                    task.status !== "Done" &&
-                    task.dueDate &&
-                    task.dueDate <= format(new Date(), "yyyy-MM-dd"),
-                ).length > 0 && <span className="nav-dot" />}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="local-card">
-            <span className="local-pulse" />
-            <div>
-              <strong>LOCAL FIRST</strong>
-              <small>Your data stays on this device</small>
-            </div>
+        <div className="sidebar-brand-row">
+          <button
+            className="brand"
+            onClick={() => navigate("/")}
+            aria-label="Victor OS dashboard"
+            title="Victor OS dashboard"
+          >
+            <span className="brand-icon">
+              V<span>.</span>
+            </span>
+            <span className="brand-copy">
+              <strong>Victor OS</strong>
+              <small>PERSONAL COMMAND CENTER</small>
+            </span>
+          </button>
+          <button
+            className="sidebar-collapse"
+            onClick={toggleCompact}
+            aria-label={compact ? "Expand sidebar" : "Collapse sidebar"}
+            title={compact ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {compact ? (
+              <PanelLeftOpen size={17} />
+            ) : (
+              <PanelLeftClose size={17} />
+            )}
+          </button>
+        </div>
+        <div className="sidebar-scroll">
+          <div className="sidebar-caption">WORKSPACE</div>
+          <nav className="side-nav" aria-label="Main navigation">
+            {renderNav(navigation.slice(0, 4))}
+          </nav>
+          <div className="sidebar-caption sidebar-caption-secondary">
+            LIBRARY
           </div>
-          <span className="sidebar-version">VICTOR OS / 1.0</span>
+          <nav className="side-nav" aria-label="Library navigation">
+            {renderNav(navigation.slice(4, 8))}
+          </nav>
+          {activeProjects.length > 0 && (
+            <div className="sidebar-projects">
+              <div className="sidebar-caption">IN MOTION</div>
+              {activeProjects.map((project) => (
+                <NavLink
+                  key={project.id}
+                  to={`/projects?open=${project.id}`}
+                  className="sidebar-project-link"
+                >
+                  <span className="sidebar-project-dot" />
+                  <span>{project.name}</span>
+                  <ArrowUpRight size={13} />
+                </NavLink>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="sidebar-bottom">
+          <nav aria-label="Preferences">{renderNav(navigation.slice(8))}</nav>
+          <div className="sidebar-local">
+            <span className="local-pulse" />
+            <span className="sidebar-local-copy">
+              Private workspace <small>Stored on this device</small>
+            </span>
+          </div>
         </div>
       </aside>
 
@@ -126,23 +198,34 @@ export function Shell({
               V<span>.</span>
             </span>
             <span className="breadcrumb">
-              WORKSPACE <span>/</span> {current?.label.toUpperCase() ?? "MORE"}
+              <span>VICTOR OS</span>
+              <i>/</i>
+              {current?.label ?? "More"}
             </span>
           </div>
           <div className="topbar-actions">
             <button
               className="search-trigger"
               onClick={() => setPaletteOpen(true)}
+              aria-label="Search Victor OS"
             >
-              <Search size={17} />
-              <span>Search anything...</span>
-              <kbd>⌘ K</kbd>
+              <Search size={17} aria-hidden="true" />
+              <span>Search or jump to…</span>
+              <kbd>{shortcut}</kbd>
             </button>
-            <span className="topbar-divider" />
+            <button
+              className="topbar-create"
+              onClick={() => navigate("/tasks?new=1")}
+              aria-label="Create task"
+              title="Create task"
+            >
+              <Plus size={18} />
+            </button>
             <button
               className="avatar"
               onClick={() => navigate("/settings")}
               aria-label="Open settings"
+              title="Open settings"
             >
               V
             </button>
@@ -152,18 +235,17 @@ export function Shell({
           <div className="page-intro">
             <div>
               <div className="eyebrow page-date">
-                <Activity size={13} />{" "}
-                {format(new Date(), "EEEE, d MMMM yyyy").toUpperCase()}
+                {format(new Date(), "EEEE, d MMMM yyyy")}
               </div>
               <h1>
                 {isHome
-                  ? `${greeting}, ${settings?.name || "Victor"}`
+                  ? `${greeting}, ${data.settings[0]?.name || "Victor"}`
                   : (current?.label ?? "More")}
                 <span className="heading-period">.</span>
               </h1>
               <p>
                 {isHome
-                  ? "Here is your day at a glance."
+                  ? "A clear view of what matters today."
                   : pageSubtitle(location.pathname)}
               </p>
             </div>
@@ -172,7 +254,7 @@ export function Shell({
                 className="intro-shortcut"
                 onClick={() => navigate("/tasks?new=1")}
               >
-                New task <ArrowUpRight size={16} />
+                <Plus size={16} /> Add a task
               </button>
             )}
           </div>
@@ -181,7 +263,7 @@ export function Shell({
       </div>
 
       <nav className="bottom-nav" aria-label="Mobile navigation">
-        {mobileNavigation.map((item) => (
+        {navigation.slice(0, 4).map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
@@ -190,17 +272,24 @@ export function Shell({
               classNames("bottom-link", isActive && "active")
             }
           >
-            <item.icon size={21} strokeWidth={1.8} />
+            <item.icon size={21} strokeWidth={1.75} />
             <span>{item.path === "/" ? "Home" : item.label}</span>
           </NavLink>
         ))}
         <NavLink
           to="/more"
           className={({ isActive }) =>
-            classNames("bottom-link", isActive && "active")
+            classNames(
+              "bottom-link",
+              (isActive ||
+                navigation
+                  .slice(4)
+                  .some((item) => item.path === location.pathname)) &&
+                "active",
+            )
           }
         >
-          <Menu size={21} strokeWidth={1.8} />
+          <Menu size={21} strokeWidth={1.75} />
           <span>More</span>
         </NavLink>
       </nav>
@@ -213,14 +302,14 @@ export function Shell({
 
 function pageSubtitle(path: string) {
   const subtitles: Record<string, string> = {
-    "/money": "A clear view of what you own, owe, earn, and spend.",
-    "/projects": "Keep every important initiative moving.",
-    "/tasks": "Focus on the next meaningful action.",
-    "/ai-lab": "Your best prompts and model costs, in one place.",
-    "/notes": "Ideas worth keeping, always within reach.",
-    "/toolbox": "Small utilities for work that moves quickly.",
-    "/links": "A launchpad for your favorite places.",
-    "/settings": "Make this command center your own.",
+    "/money": "Everything you own, owe, earn, and spend.",
+    "/projects": "Keep meaningful work moving forward.",
+    "/tasks": "Make room for the next meaningful action.",
+    "/ai-lab": "Your prompt library and model costs.",
+    "/notes": "A quiet place to think and remember.",
+    "/toolbox": "Focused utilities, ready when you are.",
+    "/links": "Your places, one step away.",
+    "/settings": "Make this workspace yours.",
     "/more": "Everything else, one tap away.",
   };
   return subtitles[path] ?? "";
@@ -238,9 +327,6 @@ export function MorePage() {
           <ArrowUpRight size={16} />
         </NavLink>
       ))}
-      <div className="more-foot">
-        <Command size={16} /> Use the search bar to jump anywhere.
-      </div>
     </div>
   );
 }

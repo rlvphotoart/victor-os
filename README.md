@@ -15,6 +15,8 @@ A private, local-first personal command center for tasks, projects, money, promp
 - **Settings:** appearance, currency display, dashboard widgets, complete JSON backup/restore, clear demo records, and reset.
 - **Command palette:** `⌘ K` on Mac or `Ctrl K` on Windows to search pages, records, links, and tools.
 
+The 2026 interface has a compact sidebar toggle on desktop, grouped command results with recent destinations, interactive money chart readouts, and bottom-sheet editors on phones. The sidebar choice and recent commands are small browser-local UI preferences; the repository's domain data and backup format are unchanged.
+
 The included sample records carry a **DEMO** marker. **Settings → Clear demo data** removes them. Editing a demo record does not remove its DEMO marker, so it will still be cleared; duplicate or create a new record to keep a personal copy.
 
 ## Stack and architecture
@@ -27,6 +29,8 @@ The included sample records carry a **DEMO** marker. **Settings → Clear demo d
 | Validation | Zod for import schema validation                                                   |
 | PWA        | `vite-plugin-pwa` with a generated service worker and app manifest                 |
 | Hosting    | Static Cloudflare Pages site; no server functions                                  |
+
+The visual system uses self-hosted Inter Variable and IBM Plex Mono font files. `src/redesign.css` owns the semantic dark/light color tokens, type, spacing, motion, shell, and responsive presentation. `src/styles.css` retains the component anatomy. No font or analytics request is sent to a third-party domain. The design audit and reviewed references are in [DESIGN_RESEARCH.md](DESIGN_RESEARCH.md).
 
 `src/data/repository.ts` is the only data access surface used by the UI. It wraps Dexie tables, initialization, snapshots, settings, and atomic full-data replacement. The database schema lives in `src/data/db.ts`; the versioned backup schema lives in `src/data/backup.ts`. A future sync provider can implement the same repository operations without changing page components. Routes are loaded on demand to keep the initial download smaller.
 
@@ -85,9 +89,6 @@ These values follow Cloudflare’s [React Pages guide](https://developers.cloudf
 For a first push from this existing local Git repository, after creating the empty GitHub repository:
 
 ```bash
-git add .
-git commit -m "Build Victor OS"
-git branch -M main
 git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
 git push -u origin main
 ```
