@@ -133,7 +133,7 @@ export function SettingsPage({ data }: { data: AppData }) {
                     if (event.key === "Enter") event.currentTarget.blur();
                   }}
                 />
-                <span>Shown in your dashboard greeting</span>
+                <span>Shown in your Home greeting</span>
               </div>
             </Field>
             <div className="form-grid">
@@ -146,8 +146,8 @@ export function SettingsPage({ data }: { data: AppData }) {
                     })
                   }
                 >
-                  <option value="dark">Dark graphite</option>
-                  <option value="light">Light</option>
+                  <option value="dark">Dark Meridian</option>
+                  <option value="light">Light Meridian</option>
                 </Select>
               </Field>
               <Field label="Currency display">

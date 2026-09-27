@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  ArrowUpRight,
+  ArrowRight,
   Boxes,
   CircleDollarSign,
+  Command,
   Home,
   LayoutGrid,
   Link2,
@@ -21,23 +22,36 @@ import { format } from "date-fns";
 import type { AppData } from "../types";
 import { CommandPalette } from "./CommandPalette";
 import { classNames } from "../lib/utils";
+import { rememberContext } from "../lib/recent";
 
 const navigation = [
-  { path: "/", label: "Dashboard", icon: Home },
-  { path: "/tasks", label: "Tasks", icon: ListTodo },
-  { path: "/projects", label: "Projects", icon: Boxes },
-  { path: "/money", label: "Money", icon: CircleDollarSign },
-  { path: "/ai-lab", label: "AI Lab", icon: Sparkles },
-  { path: "/notes", label: "Notes", icon: NotebookPen },
-  { path: "/toolbox", label: "Toolbox", icon: LayoutGrid },
-  { path: "/links", label: "Links", icon: Link2 },
-  { path: "/settings", label: "Settings", icon: Settings2 },
-];
-const compactPreference = "victor-os-sidebar-compact";
+  { path: "/", label: "Home", icon: Home, index: "00" },
+  { path: "/tasks", label: "Tasks", icon: ListTodo, index: "01" },
+  { path: "/projects", label: "Projects", icon: Boxes, index: "02" },
+  { path: "/money", label: "Money", icon: CircleDollarSign, index: "03" },
+  { path: "/ai-lab", label: "AI Lab", icon: Sparkles, index: "04" },
+  { path: "/notes", label: "Notes", icon: NotebookPen, index: "05" },
+  { path: "/toolbox", label: "Tools", icon: LayoutGrid, index: "06" },
+  { path: "/links", label: "Links", icon: Link2, index: "07" },
+  { path: "/settings", label: "Settings", icon: Settings2, index: "08" },
+] as const;
 
-function getCompactPreference() {
+const descriptions: Record<string, string> = {
+  "/tasks": "The next action, in the right place.",
+  "/projects": "Move meaningful work from intent to done.",
+  "/money": "An honest reading of what you own and owe.",
+  "/ai-lab": "Your working library of prompts and model costs.",
+  "/notes": "A quieter place for thoughts worth keeping.",
+  "/toolbox": "Small instruments for precise work.",
+  "/links": "Your destinations, without the search.",
+  "/settings": "Personalize the system and protect your data.",
+  "/more": "The rest of your workspace.",
+};
+
+const dockPreference = "victor-os-spine-expanded";
+function loadDockPreference() {
   try {
-    return window.localStorage.getItem(compactPreference) === "true";
+    return localStorage.getItem(dockPreference) === "true";
   } catch {
     return false;
   }
@@ -51,27 +65,26 @@ export function Shell({
   children: ReactNode;
 }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [compact, setCompact] = useState(getCompactPreference);
+  const [expanded, setExpanded] = useState(loadDockPreference);
+  const [clock, setClock] = useState(() => new Date());
   const location = useLocation();
   const navigate = useNavigate();
   const current = navigation.find((item) => item.path === location.pathname);
   const isHome = location.pathname === "/";
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const shortcut = /Mac|iPhone|iPad/.test(navigator.userAgent)
-    ? "⌘ K"
-    : "Ctrl K";
   const dueTasks = data.tasks.filter(
     (task) =>
       task.status !== "Done" &&
       task.dueDate &&
-      task.dueDate <= format(new Date(), "yyyy-MM-dd"),
+      task.dueDate <= format(clock, "yyyy-MM-dd"),
   ).length;
-  const activeProjects = data.projects
-    .filter((project) => project.status === "ACTIVE")
-    .slice(0, 3);
+  const shortcut = /Mac|iPhone|iPad/.test(navigator.userAgent)
+    ? "⌘ K"
+    : "Ctrl K";
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
@@ -79,208 +92,204 @@ export function Shell({
         setPaletteOpen((open) => !open);
       }
       if (event.key === "Escape") setPaletteOpen(false);
+      const target = event.target as HTMLElement | null;
+      const typing = target?.matches(
+        "input, textarea, select, [contenteditable='true']",
+      );
+      if (
+        !typing &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        event.key.toLowerCase() === "n"
+      ) {
+        event.preventDefault();
+        navigate("/tasks?new=1");
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
-
+  }, [navigate]);
   useEffect(() => {
     document.title = `${current?.label ?? "More"} — Victor OS`;
     setPaletteOpen(false);
   }, [current?.label, location.pathname]);
+  useEffect(
+    () => rememberContext(location.pathname, location.search, data),
+    [location.pathname, location.search, data],
+  );
 
-  const toggleCompact = () => {
-    setCompact((value) => {
+  const toggleExpanded = () =>
+    setExpanded((value) => {
       try {
-        window.localStorage.setItem(compactPreference, String(!value));
+        localStorage.setItem(dockPreference, String(!value));
       } catch {
-        /* session-only fallback */
+        /* session only */
       }
       return !value;
     });
-  };
-
-  const renderNav = (items: typeof navigation) =>
-    items.map((item) => (
-      <NavLink
-        key={item.path}
-        to={item.path}
-        end={item.path === "/"}
-        title={compact ? item.label : undefined}
-        className={({ isActive }) =>
-          classNames("side-link", isActive && "active")
-        }
-      >
-        <item.icon size={18} strokeWidth={1.75} aria-hidden="true" />
-        <span className="side-link-label">{item.label}</span>
-        {item.path === "/tasks" && dueTasks > 0 && (
-          <span className="nav-count" aria-label={`${dueTasks} due tasks`}>
-            {dueTasks}
-          </span>
-        )}
-      </NavLink>
-    ));
+  const renderDockLink = (item: (typeof navigation)[number]) => (
+    <NavLink
+      key={item.path}
+      to={item.path}
+      end={item.path === "/"}
+      title={item.label}
+      className={({ isActive }) =>
+        classNames("vos-dock-link", isActive && "active")
+      }
+    >
+      <span className="vos-dock-number">{item.index}</span>
+      <item.icon size={19} strokeWidth={1.7} aria-hidden="true" />
+      <span className="vos-dock-label">{item.label}</span>
+      {item.path === "/tasks" && dueTasks > 0 && (
+        <span className="vos-dock-count" aria-label={`${dueTasks} due tasks`}>
+          {dueTasks}
+        </span>
+      )}
+    </NavLink>
+  );
 
   return (
-    <div className={classNames("app-shell", compact && "sidebar-compact")}>
-      <aside className="sidebar">
-        <div className="sidebar-brand-row">
+    <div
+      className={classNames(
+        "app-shell vos-shell",
+        expanded && "vos-dock-expanded",
+      )}
+      data-workspace={current?.label.toLowerCase() ?? "more"}
+      data-mode={
+        paletteOpen
+          ? "command"
+          : /(?:^|[?&])(?:open|new)=/.test(location.search)
+            ? "focus"
+            : "normal"
+      }
+    >
+      <aside className="vos-dock" aria-label="System dock">
+        <div className="vos-dock-brand">
           <button
-            className="brand"
             onClick={() => navigate("/")}
-            aria-label="Victor OS dashboard"
-            title="Victor OS dashboard"
+            aria-label="Victor OS home"
+            title="Victor OS home"
+            className="vos-mark"
           >
-            <span className="brand-icon">
-              V<span>.</span>
-            </span>
-            <span className="brand-copy">
-              <strong>Victor OS</strong>
-              <small>PERSONAL COMMAND CENTER</small>
-            </span>
+            <span>V</span>
+            <i aria-hidden="true" />
           </button>
+          <span className="vos-dock-wordmark">VICTOR / OS</span>
+        </div>
+        <nav className="vos-dock-nav" aria-label="Workspaces">
+          {navigation.slice(0, 4).map(renderDockLink)}
+          <div className="vos-dock-separator" aria-hidden="true" />
+          {navigation.slice(4, 8).map(renderDockLink)}
+        </nav>
+        <div className="vos-dock-bottom">
+          {renderDockLink(navigation[8])}
           <button
-            className="sidebar-collapse"
-            onClick={toggleCompact}
-            aria-label={compact ? "Expand sidebar" : "Collapse sidebar"}
-            title={compact ? "Expand sidebar" : "Collapse sidebar"}
+            className="vos-dock-expand"
+            onClick={toggleExpanded}
+            aria-label={expanded ? "Compress dock" : "Expand dock"}
+            title={expanded ? "Compress dock" : "Expand dock"}
           >
-            {compact ? (
-              <PanelLeftOpen size={17} />
-            ) : (
+            {expanded ? (
               <PanelLeftClose size={17} />
+            ) : (
+              <PanelLeftOpen size={17} />
             )}
+            <span>{expanded ? "Compress" : "Expand"}</span>
           </button>
-        </div>
-        <div className="sidebar-scroll">
-          <div className="sidebar-caption">WORKSPACE</div>
-          <nav className="side-nav" aria-label="Main navigation">
-            {renderNav(navigation.slice(0, 4))}
-          </nav>
-          <div className="sidebar-caption sidebar-caption-secondary">
-            LIBRARY
-          </div>
-          <nav className="side-nav" aria-label="Library navigation">
-            {renderNav(navigation.slice(4, 8))}
-          </nav>
-          {activeProjects.length > 0 && (
-            <div className="sidebar-projects">
-              <div className="sidebar-caption">IN MOTION</div>
-              {activeProjects.map((project) => (
-                <NavLink
-                  key={project.id}
-                  to={`/projects?open=${project.id}`}
-                  className="sidebar-project-link"
-                >
-                  <span className="sidebar-project-dot" />
-                  <span>{project.name}</span>
-                  <ArrowUpRight size={13} />
-                </NavLink>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="sidebar-bottom">
-          <nav aria-label="Preferences">{renderNav(navigation.slice(8))}</nav>
-          <div className="sidebar-local">
-            <span className="local-pulse" />
-            <span className="sidebar-local-copy">
-              Private workspace <small>Stored on this device</small>
-            </span>
-          </div>
         </div>
       </aside>
 
-      <div className="app-main">
-        <header className="topbar">
-          <div className="topbar-left">
-            <span className="mobile-brand">
-              V<span>.</span>
+      <div className="app-main vos-main">
+        <header className="vos-systembar">
+          <div className="vos-system-left">
+            <span className="vos-mobile-mark" aria-hidden="true">
+              V<i />
             </span>
-            <span className="breadcrumb">
-              <span>VICTOR OS</span>
-              <i>/</i>
-              {current?.label ?? "More"}
+            <span className="vos-system-code">V/OS</span>
+            <span className="vos-system-divider" aria-hidden="true" />
+            <span className="vos-system-context">
+              {current?.index ?? "09"} <span>/</span> {current?.label ?? "More"}
             </span>
           </div>
-          <div className="topbar-actions">
-            <button
-              className="search-trigger"
-              onClick={() => setPaletteOpen(true)}
-              aria-label="Search Victor OS"
+          <div className="vos-system-right">
+            <span
+              className="vos-system-time"
+              aria-label={`Local time ${format(clock, "HH:mm")}`}
             >
-              <Search size={17} aria-hidden="true" />
-              <span>Search or jump to…</span>
+              {format(clock, "EEE d MMM").toUpperCase()}{" "}
+              <b>{format(clock, "HH:mm")}</b>
+            </span>
+            <span className="vos-local-state">
+              <i aria-hidden="true" /> LOCAL
+            </span>
+            <button
+              className="vos-command-trigger"
+              onClick={() => setPaletteOpen(true)}
+              aria-label="Open Victor Command"
+            >
+              <Search size={16} strokeWidth={1.8} />
+              <span>Victor Command</span>
               <kbd>{shortcut}</kbd>
             </button>
             <button
-              className="topbar-create"
+              className="vos-system-create"
               onClick={() => navigate("/tasks?new=1")}
               aria-label="Create task"
               title="Create task"
             >
-              <Plus size={18} />
-            </button>
-            <button
-              className="avatar"
-              onClick={() => navigate("/settings")}
-              aria-label="Open settings"
-              title="Open settings"
-            >
-              V
+              <Plus size={19} />
             </button>
           </div>
         </header>
-        <main className="page-content">
-          <div className="page-intro">
-            <div>
-              <div className="eyebrow page-date">
-                {format(new Date(), "EEEE, d MMMM yyyy")}
+        <main className="page-content vos-workspace" key={location.pathname}>
+          {!isHome && (
+            <div className="vos-workspace-header">
+              <div className="vos-workspace-header-top">
+                <span className="vos-header-rule" /> WORKSPACE{" "}
+                {current?.index ?? "09"}{" "}
+                <span className="vos-header-slash">/</span>{" "}
+                {current?.label.toUpperCase() ?? "MORE"}
               </div>
-              <h1>
-                {isHome
-                  ? `${greeting}, ${data.settings[0]?.name || "Victor"}`
-                  : (current?.label ?? "More")}
-                <span className="heading-period">.</span>
-              </h1>
-              <p>
-                {isHome
-                  ? "A clear view of what matters today."
-                  : pageSubtitle(location.pathname)}
-              </p>
+              <div className="vos-workspace-heading">
+                <div>
+                  <h1>
+                    {current?.label ?? "More"}
+                    <span>.</span>
+                  </h1>
+                  <p>{descriptions[location.pathname]}</p>
+                </div>
+                <span className="vos-workspace-position" aria-hidden="true">
+                  {current?.index ?? "09"}
+                  <small> / 09</small>
+                </span>
+              </div>
             </div>
-            {isHome && (
-              <button
-                className="intro-shortcut"
-                onClick={() => navigate("/tasks?new=1")}
-              >
-                <Plus size={16} /> Add a task
-              </button>
-            )}
-          </div>
+          )}
           {children}
         </main>
       </div>
 
-      <nav className="bottom-nav" aria-label="Mobile navigation">
+      <nav className="vos-mobile-dock" aria-label="Mobile navigation">
         {navigation.slice(0, 4).map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             end={item.path === "/"}
             className={({ isActive }) =>
-              classNames("bottom-link", isActive && "active")
+              classNames("vos-mobile-dock-link", isActive && "active")
             }
           >
-            <item.icon size={21} strokeWidth={1.75} />
-            <span>{item.path === "/" ? "Home" : item.label}</span>
+            <span className="vos-mobile-dock-index">{item.index}</span>
+            <item.icon size={20} strokeWidth={1.7} />
+            <span>{item.label}</span>
           </NavLink>
         ))}
         <NavLink
           to="/more"
           className={({ isActive }) =>
             classNames(
-              "bottom-link",
+              "vos-mobile-dock-link",
               (isActive ||
                 navigation
                   .slice(4)
@@ -289,9 +298,18 @@ export function Shell({
             )
           }
         >
-          <Menu size={21} strokeWidth={1.75} />
+          <span className="vos-mobile-dock-index">09</span>
+          <Menu size={20} strokeWidth={1.7} />
           <span>More</span>
         </NavLink>
+        <button
+          className="vos-mobile-command"
+          onClick={() => setPaletteOpen(true)}
+          aria-label="Open Victor Command"
+          title="Victor Command"
+        >
+          <Command size={19} />
+        </button>
       </nav>
       {paletteOpen && (
         <CommandPalette data={data} onClose={() => setPaletteOpen(false)} />
@@ -300,33 +318,23 @@ export function Shell({
   );
 }
 
-function pageSubtitle(path: string) {
-  const subtitles: Record<string, string> = {
-    "/money": "Everything you own, owe, earn, and spend.",
-    "/projects": "Keep meaningful work moving forward.",
-    "/tasks": "Make room for the next meaningful action.",
-    "/ai-lab": "Your prompt library and model costs.",
-    "/notes": "A quiet place to think and remember.",
-    "/toolbox": "Focused utilities, ready when you are.",
-    "/links": "Your places, one step away.",
-    "/settings": "Make this workspace yours.",
-    "/more": "Everything else, one tap away.",
-  };
-  return subtitles[path] ?? "";
-}
-
 export function MorePage() {
   return (
-    <div className="more-grid">
+    <div className="vos-more-list">
       {navigation.slice(4).map((item) => (
-        <NavLink key={item.path} to={item.path} className="more-item">
-          <span className="more-icon">
-            <item.icon size={21} />
-          </span>
+        <NavLink key={item.path} to={item.path} className="vos-more-row">
+          <span className="vos-more-index">{item.index}</span>
+          <item.icon size={21} strokeWidth={1.6} />
           <span>{item.label}</span>
-          <ArrowUpRight size={16} />
+          <ArrowRight size={17} />
         </NavLink>
       ))}
+      <div className="vos-more-local">
+        <span className="vos-local-state">
+          <i /> LOCAL DATA
+        </span>
+        <span>Stored on this device</span>
+      </div>
     </div>
   );
 }

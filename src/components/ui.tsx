@@ -3,11 +3,13 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type HTMLAttributes,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, Check, X } from "lucide-react";
 import { classNames } from "../lib/utils";
 import { ToastContext, type ToastKind } from "./toast";
@@ -95,12 +97,12 @@ export function IconButton({
 export function Card({
   children,
   className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+  ...props
+}: HTMLAttributes<HTMLElement>) {
   return (
-    <section className={classNames("card", className)}>{children}</section>
+    <section className={classNames("card", className)} {...props}>
+      {children}
+    </section>
   );
 }
 export function CardHeader({
@@ -200,11 +202,13 @@ export function Modal({
   children,
   onClose,
   width = "normal",
+  mode = "dialog",
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   width?: "normal" | "wide";
+  mode?: "dialog" | "focus";
 }) {
   const dialog = useRef<HTMLElement>(null);
   const closeRef = useRef(onClose);
@@ -226,7 +230,7 @@ export function Modal({
         event.preventDefault();
         closeRef.current();
       }
-      if (event.key !== "Tab") return;
+      if (event.key !== "Tab" || mode === "focus") return;
       const focusable = dialog.current?.querySelectorAll<HTMLElement>(
         "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href]",
       );
@@ -246,31 +250,44 @@ export function Modal({
       window.removeEventListener("keydown", keydown);
       previous?.focus();
     };
-  }, []);
-  return (
+  }, [mode]);
+  return createPortal(
     <div
-      className="modal-backdrop"
+      className={mode === "focus" ? "focus-backdrop" : "modal-backdrop"}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (mode === "dialog" && event.target === event.currentTarget)
+          onClose();
       }}
       role="presentation"
     >
       <section
         ref={dialog}
-        className={classNames("modal", width === "wide" && "modal-wide")}
+        className={classNames(
+          "modal",
+          width === "wide" && "modal-wide",
+          mode === "focus" && "focus-panel",
+        )}
         role="dialog"
-        aria-modal="true"
+        aria-modal={mode === "dialog"}
         aria-label={title}
       >
         <div className="modal-header">
-          <h2>{title}</h2>
+          <div>
+            {mode === "focus" && (
+              <span className="focus-panel-caption">
+                FOCUS / WORKSPACE OBJECT
+              </span>
+            )}
+            <h2>{title}</h2>
+          </div>
           <IconButton label="Close" onClick={onClose}>
             <X size={18} />
           </IconButton>
         </div>
         <div className="modal-body">{children}</div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 export function ConfirmDialog({

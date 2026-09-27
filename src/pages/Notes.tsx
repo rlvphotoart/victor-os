@@ -72,7 +72,9 @@ export function NotesPage({ data }: { data: AppData }) {
             onChange={(event) => setQuery(event.target.value)}
           />
         </div>
-        <span className="result-count">{filtered.length} notes</span>
+        <span className="result-count">
+          {filtered.length} {filtered.length === 1 ? "note" : "notes"}
+        </span>
       </div>
       {filtered.length ? (
         <div className="note-grid">
@@ -218,6 +220,7 @@ function NoteEditor({ note, onClose }: { note: Note; onClose: () => void }) {
       title={title || "Untitled note"}
       onClose={() => void close()}
       width="wide"
+      mode="focus"
     >
       <form className="form-stack note-editor" onSubmit={submit}>
         <div className="note-editor-bar">

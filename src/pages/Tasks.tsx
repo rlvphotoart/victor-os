@@ -6,7 +6,9 @@ import {
   CalendarDays,
   Check,
   Circle,
+  Flag,
   GripVertical,
+  Pencil,
   Plus,
   Search,
   SlidersHorizontal,
@@ -37,6 +39,7 @@ import {
   Textarea,
 } from "../components/ui";
 import { useToast } from "../components/toast";
+import { ContextMenu, StatusSignal } from "../components/OS";
 
 const tone = (priority: Priority) =>
   priority === "Critical"
@@ -57,6 +60,9 @@ export function TasksPage({ data }: { data: AppData }) {
   const [sort, setSort] = useState("due");
   const [quickTitle, setQuickTitle] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(
+    null,
+  );
   const notify = useToast();
   const editorId = params.get("open");
   const editing = data.tasks.find((item) => item.id === editorId);
@@ -161,6 +167,10 @@ export function TasksPage({ data }: { data: AppData }) {
     <article
       key={task.id}
       className={classNames("task-row", task.status === "Done" && "task-done")}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        setMenu({ id: task.id, x: event.clientX, y: event.clientY });
+      }}
       draggable
       onDragStart={(event) =>
         event.dataTransfer.setData("text/task-id", task.id)
@@ -200,7 +210,20 @@ export function TasksPage({ data }: { data: AppData }) {
       <div className="task-row-end">
         <Badge tone={tone(task.priority)}>{task.priority}</Badge>
         {view !== "Board" && (
-          <span className="task-status-label">{task.status}</span>
+          <span className="task-status-label">
+            <StatusSignal
+              label={task.status}
+              tone={
+                task.status === "Done"
+                  ? "complete"
+                  : task.status === "Waiting"
+                    ? "warning"
+                    : task.status === "In Progress"
+                      ? "active"
+                      : "neutral"
+              }
+            />
+          </span>
         )}
         <Select
           aria-label={`Status for ${task.title}`}
@@ -386,6 +409,53 @@ export function TasksPage({ data }: { data: AppData }) {
           onDelete={() => editing && setDeleteId(editing.id)}
         />
       )}
+      {menu &&
+        (() => {
+          const task = data.tasks.find((item) => item.id === menu.id);
+          return task ? (
+            <ContextMenu
+              x={menu.x}
+              y={menu.y}
+              title={task.title}
+              onClose={() => setMenu(null)}
+              actions={[
+                {
+                  label: "Open focus",
+                  icon: Pencil,
+                  onSelect: () => setParams({ open: task.id }),
+                },
+                {
+                  label:
+                    task.status === "Done" ? "Reopen task" : "Complete task",
+                  icon: Check,
+                  onSelect: () => {
+                    void changeStatus(
+                      task,
+                      task.status === "Done" ? "Next" : "Done",
+                    );
+                  },
+                },
+                {
+                  label: "Set high priority",
+                  icon: Flag,
+                  onSelect: () => {
+                    void repository.tasks.save({
+                      ...task,
+                      priority: "High",
+                      updatedAt: nowISO(),
+                    });
+                  },
+                },
+                {
+                  label: "Delete task",
+                  icon: Trash2,
+                  danger: true,
+                  onSelect: () => setDeleteId(task.id),
+                },
+              ]}
+            />
+          ) : null;
+        })()}
       {deleteId && (
         <ConfirmDialog
           title="Delete task?"
@@ -447,7 +517,11 @@ function TaskForm({
     onClose();
   };
   return (
-    <Modal title={task ? "Edit task" : "New task"} onClose={onClose}>
+    <Modal
+      title={task ? "Edit task" : "New task"}
+      onClose={onClose}
+      mode="focus"
+    >
       <form className="form-stack" onSubmit={save}>
         <Field label="Title">
           <Input

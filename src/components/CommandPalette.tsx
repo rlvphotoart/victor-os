@@ -5,19 +5,24 @@ import {
   Boxes,
   CircleDollarSign,
   Command,
+  Download,
   Home,
   LayoutGrid,
   Link2,
   ListTodo,
   NotebookPen,
+  Plus,
   Search,
   Settings2,
   Sparkles,
+  SunMoon,
   X,
 } from "lucide-react";
 import type { AppData } from "../types";
 import { TOOLS } from "../types";
-import { safeUrl } from "../lib/utils";
+import { downloadText, nowISO, safeUrl, today, uid } from "../lib/utils";
+import { repository } from "../data/repository";
+import { useToast } from "./toast";
 
 type Result = {
   key: string;
@@ -27,6 +32,7 @@ type Result = {
   section?: string;
   path?: string;
   url?: string;
+  action?: "new-note" | "theme" | "export";
   icon: typeof Home;
 };
 const recentKey = "victor-os-recent-commands";
@@ -51,6 +57,7 @@ export function CommandPalette({
   onClose: () => void;
 }) {
   const navigate = useNavigate();
+  const notify = useToast();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
   const [recent, setRecent] = useState(loadRecent);
@@ -71,8 +78,8 @@ export function CommandPalette({
       {
         key: "page-home",
         kind: "PAGE",
-        title: "Dashboard",
-        subtitle: "Daily overview",
+        title: "Home",
+        subtitle: "Now, attention, and recent",
         path: "/",
         icon: Home,
       },
@@ -141,7 +148,58 @@ export function CommandPalette({
         icon: Settings2,
       },
     ];
+    const actions: Result[] = [
+      {
+        key: "action-task",
+        kind: "ACTION",
+        title: "Create task",
+        subtitle: "Start a new task",
+        path: "/tasks?new=1",
+        icon: Plus,
+      },
+      {
+        key: "action-project",
+        kind: "ACTION",
+        title: "Create project",
+        subtitle: "Open a new workstream",
+        path: "/projects?new=1",
+        icon: Boxes,
+      },
+      {
+        key: "action-prompt",
+        kind: "ACTION",
+        title: "Create prompt",
+        subtitle: "Add to the prompt library",
+        path: "/ai-lab?new=1",
+        icon: Sparkles,
+      },
+      {
+        key: "action-note",
+        kind: "ACTION",
+        title: "Create note",
+        subtitle: "Begin a local note",
+        action: "new-note",
+        icon: NotebookPen,
+      },
+      {
+        key: "action-theme",
+        kind: "ACTION",
+        title: "Switch theme",
+        subtitle: "Toggle dark and light",
+        action: "theme",
+        icon: SunMoon,
+      },
+      {
+        key: "action-export",
+        kind: "ACTION",
+        title: "Export all data",
+        subtitle: "Download a complete local backup",
+        action: "export",
+        icon: Download,
+      },
+    ];
     const all: Result[] = [
+      ...actions,
       ...pages,
       ...data.projects.map((item) => ({
         key: `project-${item.id}`,
@@ -211,18 +269,24 @@ export function CommandPalette({
     const recentItems = recent
       .map((key) => all.find((item) => item.key === key))
       .filter((item): item is Result => Boolean(item))
-      .map((item) => ({ ...item, section: "RECENT" }));
+      .map((item) => ({ ...item, section: "RECENT" }))
+      .slice(0, 3);
     const chosen = new Set(recentItems.map((item) => item.key));
     return [
       ...recentItems,
+      ...actions
+        .filter((item) => !chosen.has(item.key))
+        .slice(0, 3)
+        .map((item) => ({ ...item, section: "QUICK ACTIONS" })),
       ...pages
         .filter((item) => !chosen.has(item.key))
+        .slice(0, 6)
         .map((item) => ({ ...item, section: "NAVIGATION" })),
       ...all
         .filter((item) => item.kind === "TOOL" && !chosen.has(item.key))
         .slice(0, 3)
         .map((item) => ({ ...item, section: "UTILITIES" })),
-    ].slice(0, 14);
+    ].slice(0, 16);
   }, [data, query, recent]);
   const groups = results.reduce<
     { name: string; items: { item: Result; index: number }[] }[]
@@ -233,7 +297,7 @@ export function CommandPalette({
     else acc.push({ name, items: [{ item, index }] });
     return acc;
   }, []);
-  const activate = (item: Result) => {
+  const activate = async (item: Result) => {
     const next = [item.key, ...recent.filter((key) => key !== item.key)].slice(
       0,
       5,
@@ -244,9 +308,38 @@ export function CommandPalette({
     } catch {
       /* private browsing fallback */
     }
-    if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
-    else if (item.path) navigate(item.path);
-    onClose();
+    try {
+      if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
+      else if (item.path) navigate(item.path);
+      else if (item.action === "theme") {
+        await repository.saveSettings({
+          theme: data.settings[0]?.theme === "light" ? "dark" : "light",
+        });
+      } else if (item.action === "export") {
+        const { makeBackup } = await import("../data/backup");
+        downloadText(
+          `victor-os-backup-${today()}.json`,
+          JSON.stringify(makeBackup(data), null, 2),
+        );
+        notify("Backup exported");
+      } else if (item.action === "new-note") {
+        const timestamp = nowISO();
+        const id = uid();
+        await repository.notes.save({
+          id,
+          title: "",
+          content: "",
+          tags: [],
+          pinned: false,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        });
+        navigate(`/notes?open=${id}`);
+      }
+      onClose();
+    } catch {
+      notify("Could not complete that command", "error");
+    }
   };
   return (
     <div
@@ -281,10 +374,10 @@ export function CommandPalette({
       >
         <div className="palette-heading">
           <span className="palette-mark">
-            V<span>.</span>
+            V<span>/</span>
           </span>
           <span>
-            VICTOR OS <small>COMMAND CENTER</small>
+            VICTOR COMMAND <small>SYSTEM ACTIONS + SEARCH</small>
           </span>
           <kbd>ESC</kbd>
         </div>
@@ -293,7 +386,7 @@ export function CommandPalette({
           <input
             ref={input}
             value={query}
-            placeholder="Search anything in your workspace…"
+            placeholder="Ask the system to open or do something…"
             onChange={(event) => {
               setQuery(event.target.value);
               setSelected(0);

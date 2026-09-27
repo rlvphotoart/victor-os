@@ -4,7 +4,7 @@ A private, local-first personal command center for tasks, projects, money, promp
 
 ## What is included
 
-- **Dashboard:** configurable daily overview, financial snapshot, project status, and quick links.
+- **Home:** a Now, Attention, and Recent operating view with the next action, financial reading, project runway, and configurable quick access.
 - **Tasks:** Today, board, and all-task views; quick add; project/priority/status filters; sorting; search; completion; editing; deletion; desktop drag between status columns. On touch screens, change status with the selector on each task.
 - **Projects:** status, priority, progress, next action, notes, links, and related task counts.
 - **Money:** manually entered accounts, debt, investments, transactions, monthly category budgets, goals, financial ratios, and a six-month income/expense chart. There are no bank connections.
@@ -13,9 +13,9 @@ A private, local-first personal command center for tasks, projects, money, promp
 - **Toolbox:** JSON formatting/validation, Base64, URL encoding, timestamp conversion in both directions, UUID generation, line diff, regex testing, character counting, and rough token estimates. Processing stays in the browser.
 - **Links:** categorized bookmarks with drag ordering on desktop and move buttons on touch screens.
 - **Settings:** appearance, currency display, dashboard widgets, complete JSON backup/restore, clear demo records, and reset.
-- **Command palette:** `⌘ K` on Mac or `Ctrl K` on Windows to search pages, records, links, and tools.
+- **Victor Command:** `⌘ K` on Mac or `Ctrl K` on Windows to search pages, records, links, and tools or create a task, project, prompt, or note. `N` starts a task when focus is outside a text field.
 
-The 2026 interface has a compact sidebar toggle on desktop, grouped command results with recent destinations, interactive money chart readouts, and bottom-sheet editors on phones. The sidebar choice and recent commands are small browser-local UI preferences; the repository's domain data and backup format are unchanged.
+The Meridian interface uses a numbered desktop navigation spine, persistent system strip, contextual focus planes, and a five-position mobile dock. Recent contexts and dock expansion are small browser-local UI preferences; the repository's domain data and backup format are unchanged. Project and task objects also expose contextual right-click actions on desktop.
 
 The included sample records carry a **DEMO** marker. **Settings → Clear demo data** removes them. Editing a demo record does not remove its DEMO marker, so it will still be cleared; duplicate or create a new record to keep a personal copy.
 
@@ -30,7 +30,7 @@ The included sample records carry a **DEMO** marker. **Settings → Clear demo d
 | PWA        | `vite-plugin-pwa` with a generated service worker and app manifest                 |
 | Hosting    | Static Cloudflare Pages site; no server functions                                  |
 
-The visual system uses self-hosted Inter Variable and IBM Plex Mono font files. `src/redesign.css` owns the semantic dark/light color tokens, type, spacing, motion, shell, and responsive presentation. `src/styles.css` retains the component anatomy. No font or analytics request is sent to a third-party domain. The design audit and reviewed references are in [DESIGN_RESEARCH.md](DESIGN_RESEARCH.md).
+The visual system uses self-hosted Inter Variable and IBM Plex Mono font files. `src/os.css` owns Meridian's semantic dark/light tokens, shell, surfaces, motion, and responsive rules. `src/styles.css` retains component anatomy, while `src/redesign.css` holds earlier component refinements still used by the app. The rationale and visual audit are in [DESIGN_LANGUAGE.md](DESIGN_LANGUAGE.md); prior research is in [DESIGN_RESEARCH.md](DESIGN_RESEARCH.md). No font or analytics request is sent to a third-party domain.
 
 `src/data/repository.ts` is the only data access surface used by the UI. It wraps Dexie tables, initialization, snapshots, settings, and atomic full-data replacement. The database schema lives in `src/data/db.ts`; the versioned backup schema lives in `src/data/backup.ts`. A future sync provider can implement the same repository operations without changing page components. Routes are loaded on demand to keep the initial download smaller.
 
@@ -63,7 +63,7 @@ npm run build
 npm run preview
 ```
 
-`dist/` is the complete static site. Generated PNG icons are committed in `public/`; `scripts/generate-icons.swift` is the source for regenerating them on macOS. The PWA manifest and service worker are generated during the build.
+`dist/` is the complete static site. Meridian PNG icons are committed in `public/`; `scripts/generate-icons.swift` is the source for regenerating them on macOS. The PWA manifest and service worker are generated during the build.
 
 ## Backups
 

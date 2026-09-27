@@ -30,6 +30,7 @@ import {
   Textarea,
 } from "../components/ui";
 import { useToast } from "../components/toast";
+import { Datum, Metric, StatusSignal } from "../components/OS";
 
 const tools = ["Codex", "ChatGPT", "Hermès", "Claude", "Other"];
 
@@ -95,19 +96,35 @@ export function AILabPage({ data }: { data: AppData }) {
   };
   return (
     <div className="page-stack">
-      <div className="ai-banner">
-        <div>
-          <span className="eyebrow">
-            <Sparkles size={14} /> YOUR THINKING, ORGANIZED
-          </span>
-          <h2>A home for your best prompts.</h2>
-          <p>
-            Keep useful instructions close, improve them over time, and
-            understand their cost.
-          </p>
+      <section className="vos-ai-register" aria-label="AI Lab register">
+        <div className="vos-ai-register-lead">
+          <Datum number="04.A" label="Working intelligence" />
+          <h2>
+            Prompt register<span aria-hidden="true">.</span>
+          </h2>
+          <p>Instructions, revisions, and rates kept within reach.</p>
+          <StatusSignal label="LOCAL LIBRARY" tone="active" />
         </div>
-        <div className="ai-banner-symbol">✳</div>
-      </div>
+        <div className="vos-ai-register-readings">
+          <Metric
+            label="PROMPTS"
+            value={String(data.prompts.length).padStart(2, "0")}
+            annotation="Saved instructions"
+          />
+          <Metric
+            label="FAVOURITES"
+            value={String(
+              data.prompts.filter((item) => item.favorite).length,
+            ).padStart(2, "0")}
+            annotation="Pinned for reuse"
+          />
+          <Metric
+            label="COST MODELS"
+            value={String(data.costModels.length).padStart(2, "0")}
+            annotation="Editable rates"
+          />
+        </div>
+      </section>
       <div className="section-toolbar">
         <div className="segmented">
           <button
@@ -352,6 +369,7 @@ function PromptForm({
       title={prompt ? "Edit prompt" : "New prompt"}
       onClose={onClose}
       width="wide"
+      mode="focus"
     >
       <form className="form-stack" onSubmit={save}>
         <div className="form-grid">
@@ -692,6 +710,7 @@ function ModelForm({
     <Modal
       title={model ? "Edit model rates" : "Add model rates"}
       onClose={onClose}
+      mode="focus"
     >
       <form className="form-stack" onSubmit={save}>
         <div className="form-grid">

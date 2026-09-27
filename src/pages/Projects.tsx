@@ -3,7 +3,10 @@ import { useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
   ArrowUpRight,
+  Check,
   MoreHorizontal,
+  Pause,
+  Pencil,
   Plus,
   Search,
   Trash2,
@@ -27,23 +30,25 @@ import {
   Textarea,
 } from "../components/ui";
 import { useToast } from "../components/toast";
+import { ContextMenu, StatusSignal } from "../components/OS";
 
 const statusTone = (status: ProjectStatus) =>
   status === "ACTIVE"
-    ? "green"
+    ? "active"
     : status === "BLOCKED"
-      ? "red"
-      : status === "PLANNING"
-        ? "blue"
-        : status === "DONE"
-          ? "purple"
-          : "neutral";
+      ? "danger"
+      : status === "DONE"
+        ? "complete"
+        : "neutral";
 
 export function ProjectsPage({ data }: { data: AppData }) {
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(
+    null,
+  );
   const notify = useToast();
   const editing = data.projects.find((item) => item.id === params.get("open"));
   const creating = params.get("new") === "1";
@@ -114,7 +119,14 @@ export function ProjectsPage({ data }: { data: AppData }) {
       {filtered.length ? (
         <div className="project-grid">
           {filtered.map((project) => (
-            <Card key={project.id} className="project-card">
+            <Card
+              key={project.id}
+              className="project-card"
+              onContextMenu={(event) => {
+                event.preventDefault();
+                setMenu({ id: project.id, x: event.clientX, y: event.clientY });
+              }}
+            >
               <div className="project-card-top">
                 <div className="project-mark">
                   {project.name.slice(0, 1).toUpperCase()}
@@ -134,9 +146,10 @@ export function ProjectsPage({ data }: { data: AppData }) {
                 <p>{project.summary}</p>
               </div>
               <div className="project-badges">
-                <Badge tone={statusTone(project.status)}>
-                  {project.status}
-                </Badge>
+                <StatusSignal
+                  label={project.status}
+                  tone={statusTone(project.status)}
+                />
                 <Badge
                   tone={
                     project.priority === "Critical"
@@ -219,6 +232,44 @@ export function ProjectsPage({ data }: { data: AppData }) {
           onClose={close}
         />
       )}
+      {menu &&
+        (() => {
+          const project = data.projects.find((item) => item.id === menu.id);
+          return project ? (
+            <ContextMenu
+              x={menu.x}
+              y={menu.y}
+              title={project.name}
+              onClose={() => setMenu(null)}
+              actions={[
+                {
+                  label: "Open focus",
+                  icon: Pencil,
+                  onSelect: () => setParams({ open: project.id }),
+                },
+                {
+                  label:
+                    project.status === "ACTIVE"
+                      ? "Pause project"
+                      : "Mark active",
+                  icon: project.status === "ACTIVE" ? Pause : Check,
+                  onSelect: () => {
+                    void repository.projects.save({
+                      ...project,
+                      status: project.status === "ACTIVE" ? "PAUSED" : "ACTIVE",
+                    });
+                  },
+                },
+                {
+                  label: "Delete project",
+                  icon: Trash2,
+                  danger: true,
+                  onSelect: () => setDeleteId(project.id),
+                },
+              ]}
+            />
+          ) : null;
+        })()}
       {deleteId && (
         <ConfirmDialog
           title="Delete project?"
@@ -285,6 +336,7 @@ function ProjectForm({
       title={project ? "Edit project" : "New project"}
       onClose={onClose}
       width="wide"
+      mode="focus"
     >
       <form className="form-stack" onSubmit={save}>
         <div className="form-grid">

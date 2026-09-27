@@ -9,19 +9,32 @@ func generate(size: Int, filename: String) throws {
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = context
     let s = CGFloat(size)
-    NSColor(calibratedRed: 0.09, green: 0.10, blue: 0.125, alpha: 1).setFill()
-    NSBezierPath(roundedRect: NSRect(x: 0, y: 0, width: s, height: s), xRadius: s * 0.22, yRadius: s * 0.22).fill()
+    NSColor(calibratedRed: 0.063, green: 0.09, blue: 0.075, alpha: 1).setFill()
+    NSBezierPath(roundedRect: NSRect(x: 0, y: 0, width: s, height: s), xRadius: s * 0.16, yRadius: s * 0.16).fill()
+    let rule = NSBezierPath()
+    rule.move(to: NSPoint(x: s * 0.18, y: s * 0.84))
+    rule.line(to: NSPoint(x: s * 0.82, y: s * 0.84))
+    rule.move(to: NSPoint(x: s * 0.18, y: s * 0.16))
+    rule.line(to: NSPoint(x: s * 0.82, y: s * 0.16))
+    rule.lineWidth = s * 0.015
+    NSColor(calibratedRed: 0.20, green: 0.25, blue: 0.22, alpha: 1).setStroke()
+    rule.stroke()
     let v = NSBezierPath()
-    v.move(to: NSPoint(x: s * 0.25, y: s * 0.73))
-    v.line(to: NSPoint(x: s * 0.49, y: s * 0.27))
-    v.line(to: NSPoint(x: s * 0.75, y: s * 0.73))
-    v.lineWidth = s * 0.085
-    v.lineCapStyle = .round
-    v.lineJoinStyle = .round
-    NSColor(calibratedRed: 0.93, green: 0.94, blue: 0.95, alpha: 1).setStroke()
+    v.move(to: NSPoint(x: s * 0.25, y: s * 0.69))
+    v.line(to: NSPoint(x: s * 0.50, y: s * 0.25))
+    v.line(to: NSPoint(x: s * 0.75, y: s * 0.69))
+    v.lineWidth = s * 0.07
+    v.lineCapStyle = .square
+    v.lineJoinStyle = .miter
+    NSColor(calibratedRed: 0.925, green: 0.94, blue: 0.90, alpha: 1).setStroke()
     v.stroke()
-    NSColor(calibratedRed: 0.57, green: 0.64, blue: 0.96, alpha: 1).setFill()
-    NSBezierPath(ovalIn: NSRect(x: s * 0.73, y: s * 0.22, width: s * 0.08, height: s * 0.08)).fill()
+    let seam = NSBezierPath()
+    seam.move(to: NSPoint(x: s * 0.69, y: s * 0.25))
+    seam.line(to: NSPoint(x: s * 0.79, y: s * 0.25))
+    seam.line(to: NSPoint(x: s * 0.79, y: s * 0.35))
+    seam.lineWidth = s * 0.025
+    NSColor(calibratedRed: 0.86, green: 0.64, blue: 0.48, alpha: 1).setStroke()
+    seam.stroke()
     context.flushGraphics()
     NSGraphicsContext.restoreGraphicsState()
     if let png = bitmap.representation(using: .png, properties: [:]) {

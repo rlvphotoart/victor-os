@@ -1,0 +1,2572 @@
+/* Meridian: the visible operating language of Victor OS. */
+:root {
+  color-scheme: dark;
+  --vos-bg-root: #101713;
+  --vos-bg-workspace: #171e19;
+  --vos-surface: #1e2720;
+  --vos-surface-raised: #253027;
+  --vos-surface-focus: #2c372d;
+  --vos-edge: #344037;
+  --vos-edge-soft: #29342d;
+  --vos-text-primary: #ecf0e6;
+  --vos-text-secondary: #b4bdaf;
+  --vos-text-dim: #849185;
+  --vos-identity: #dba27b;
+  --vos-identity-active: #efbd96;
+  --vos-identity-soft: rgb(219 162 123 / 13%);
+  --vos-success: #a2c39e;
+  --vos-warning: #d7b578;
+  --vos-danger: #dc8e7e;
+  --vos-info: #a0bab4;
+  --vos-radius-control: 5px;
+  --vos-radius-surface: 8px;
+  --vos-motion-fast: 140ms;
+  --vos-motion-context: 230ms;
+  --vos-motion-focus: 310ms;
+  --bg: var(--vos-bg-root);
+  --sidebar: var(--vos-bg-root);
+  --panel: var(--vos-bg-workspace);
+  --panel2: var(--vos-surface);
+  --panel3: var(--vos-surface-raised);
+  --border: var(--vos-edge);
+  --border-soft: var(--vos-edge-soft);
+  --text: var(--vos-text-primary);
+  --muted: var(--vos-text-secondary);
+  --faint: var(--vos-text-dim);
+  --accent: var(--vos-identity);
+  --accent-strong: var(--vos-identity-active);
+  --accent-bg: var(--vos-identity-soft);
+  --positive: var(--vos-success);
+  --red: var(--vos-danger);
+  --amber: var(--vos-warning);
+  --blue: var(--vos-info);
+  --purple: #b6aa91;
+  --brand-mark: var(--vos-identity);
+  --brand-ink: var(--vos-bg-root);
+  --finance-surface: #202b23;
+  --ambient: rgb(219 162 123 / 4%);
+  --shadow: 0 30px 80px rgb(0 0 0 / 43%);
+  --radius-control: var(--vos-radius-control);
+  --radius-card: var(--vos-radius-surface);
+  --radius-overlay: 10px;
+  --motion-quick: var(--vos-motion-fast);
+  --motion-panel: var(--vos-motion-context);
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --vos-bg-root: #e9ece5;
+  --vos-bg-workspace: #f5f5ef;
+  --vos-surface: #eaede6;
+  --vos-surface-raised: #e0e5dc;
+  --vos-surface-focus: #fefdf7;
+  --vos-edge: #c5cec3;
+  --vos-edge-soft: #dbe1d8;
+  --vos-text-primary: #253029;
+  --vos-text-secondary: #566258;
+  --vos-text-dim: #738075;
+  --vos-identity: #a65f3b;
+  --vos-identity-active: #844827;
+  --vos-identity-soft: rgb(166 95 59 / 10%);
+  --vos-success: #477d55;
+  --vos-warning: #9c6c2d;
+  --vos-danger: #ae5549;
+  --vos-info: #577b78;
+  --finance-surface: #e8ede3;
+  --ambient: rgb(166 95 59 / 5%);
+  --shadow: 0 25px 70px rgb(23 42 30 / 18%);
+}
+
+body {
+  background: var(--vos-bg-root);
+  color: var(--vos-text-primary);
+  font-family:
+    "Inter Variable",
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 13px;
+}
+body:has(.modal-backdrop, .palette-backdrop) {
+  overflow: hidden;
+}
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a {
+  transition:
+    color var(--vos-motion-fast),
+    background var(--vos-motion-fast),
+    border-color var(--vos-motion-fast),
+    transform var(--vos-motion-fast),
+    opacity var(--vos-motion-fast);
+}
+button:active:not(:disabled),
+a:active {
+  transform: scale(0.985);
+}
+::selection {
+  background: var(--vos-identity-soft);
+}
+:focus-visible {
+  outline: 2px solid var(--vos-identity-active);
+  outline-offset: 3px;
+}
+.vos-shell {
+  min-height: 100dvh;
+  background: var(--vos-bg-workspace);
+}
+
+/* Persistent frame and numbered navigation spine */
+.vos-dock {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  width: 82px;
+  display: flex;
+  flex-direction: column;
+  background: var(--vos-bg-root);
+  border-right: 1px solid var(--vos-edge-soft);
+  overflow: hidden;
+  transition: width var(--vos-motion-context) cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+.vos-dock-expanded .vos-dock {
+  width: 204px;
+}
+.vos-dock-brand {
+  height: 72px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-left: 21px;
+  border-bottom: 1px solid var(--vos-edge-soft);
+}
+.vos-mark {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border: 1px solid var(--vos-identity);
+  border-radius: 2px 9px 2px 2px;
+  background: transparent;
+  color: var(--vos-identity);
+  font-size: 24px;
+  font-weight: 690;
+  line-height: 1;
+  letter-spacing: -0.11em;
+  text-align: left;
+  padding-left: 6px;
+}
+.vos-mark i,
+.vos-mobile-mark i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  right: -3px;
+  bottom: -3px;
+  background: var(--vos-identity);
+  transform: rotate(45deg);
+}
+.vos-dock-wordmark {
+  white-space: nowrap;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.11em;
+  color: var(--vos-text-primary);
+  opacity: 0;
+  transition: opacity var(--vos-motion-fast);
+}
+.vos-dock-expanded .vos-dock-wordmark {
+  opacity: 1;
+}
+.vos-dock-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 16px 9px 9px;
+  scrollbar-width: none;
+}
+.vos-dock-nav::-webkit-scrollbar {
+  display: none;
+}
+.vos-dock-link {
+  position: relative;
+  width: 62px;
+  min-height: 57px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  color: var(--vos-text-dim);
+}
+.vos-dock-link:hover {
+  background: var(--vos-surface);
+  color: var(--vos-text-primary);
+}
+.vos-dock-link.active {
+  color: var(--vos-identity-active);
+  background: var(--vos-identity-soft);
+}
+.vos-dock-link.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 2px;
+  height: 22px;
+  background: var(--vos-identity);
+}
+.vos-dock-link.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 10px;
+  height: 2px;
+  background: var(--vos-identity);
+}
+.vos-dock-number {
+  position: absolute;
+  top: 6px;
+  right: 5px;
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.04em;
+  color: var(--vos-text-dim);
+  opacity: 0.72;
+}
+.vos-dock-label {
+  font-size: 9px;
+  font-weight: 620;
+  line-height: 1;
+  white-space: nowrap;
+}
+.vos-dock-count {
+  position: absolute;
+  top: 4px;
+  right: 0;
+  min-width: 12px;
+  height: 12px;
+  background: var(--vos-warning);
+  color: var(--vos-bg-root);
+  font:
+    9px/12px "IBM Plex Mono",
+    monospace;
+  text-align: center;
+}
+.vos-dock-separator {
+  height: 1px;
+  flex: none;
+  background: var(--vos-edge-soft);
+  margin: 8px 11px 9px;
+}
+.vos-dock-bottom {
+  margin-top: auto;
+  padding: 8px 9px 13px;
+  border-top: 1px solid var(--vos-edge-soft);
+  display: grid;
+  gap: 3px;
+}
+.vos-dock-expand {
+  width: 62px;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--vos-text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 11px;
+}
+.vos-dock-expand:hover {
+  color: var(--vos-identity);
+}
+.vos-dock-expand span {
+  display: none;
+}
+.vos-dock-expanded .vos-dock-link {
+  width: 184px;
+  min-height: 48px;
+  flex-direction: row;
+  justify-content: flex-start;
+  padding: 0 20px;
+  gap: 15px;
+}
+.vos-dock-expanded .vos-dock-label {
+  font-size: 12px;
+}
+.vos-dock-expanded .vos-dock-number {
+  top: auto;
+  right: 11px;
+}
+.vos-dock-expanded .vos-dock-expand {
+  width: 184px;
+  justify-content: flex-start;
+  padding-left: 22px;
+}
+.vos-dock-expanded .vos-dock-expand span {
+  display: inline;
+}
+.vos-main {
+  margin-left: 82px;
+  min-height: 100dvh;
+  background: var(--vos-bg-workspace);
+  transition: margin-left var(--vos-motion-context)
+    cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+.vos-dock-expanded .vos-main {
+  margin-left: 204px;
+}
+.vos-systembar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 0 clamp(24px, 4vw, 64px);
+  border-bottom: 1px solid var(--vos-edge-soft);
+  background: color-mix(in srgb, var(--vos-bg-workspace) 93%, transparent);
+  backdrop-filter: blur(18px);
+}
+.vos-system-left,
+.vos-system-right {
+  display: flex;
+  align-items: center;
+  gap: 19px;
+  min-width: 0;
+}
+.vos-system-code,
+.vos-system-context,
+.vos-system-time,
+.vos-local-state {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  white-space: nowrap;
+}
+.vos-system-code {
+  color: var(--vos-identity);
+}
+.vos-system-divider {
+  width: 26px;
+  height: 1px;
+  background: var(--vos-identity);
+  opacity: 0.65;
+}
+.vos-system-context {
+  color: var(--vos-text-secondary);
+}
+.vos-system-context span {
+  color: var(--vos-text-dim);
+  margin: 0 5px;
+}
+.vos-system-time {
+  color: var(--vos-text-dim);
+}
+.vos-system-time b {
+  color: var(--vos-text-secondary);
+  font-weight: 500;
+  margin-left: 10px;
+}
+.vos-local-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vos-text-secondary);
+}
+.vos-local-state i {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  background: var(--vos-success);
+  transform: rotate(45deg);
+}
+.vos-command-trigger {
+  min-width: 204px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--vos-surface);
+  border: 1px solid var(--vos-edge);
+  padding: 0 11px;
+  color: var(--vos-text-secondary);
+  text-align: left;
+  font-size: 11px;
+}
+.vos-command-trigger span {
+  flex: 1;
+}
+.vos-command-trigger:hover {
+  border-color: var(--vos-identity);
+  color: var(--vos-text-primary);
+}
+.vos-command-trigger kbd {
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--vos-text-dim);
+  border: 0;
+  padding: 0;
+}
+.vos-system-create {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--vos-edge);
+  background: transparent;
+  color: var(--vos-identity);
+}
+.vos-system-create:hover {
+  border-color: var(--vos-identity);
+  background: var(--vos-identity-soft);
+}
+.vos-mobile-mark,
+.vos-mobile-dock {
+  display: none;
+}
+.vos-workspace {
+  max-width: none;
+  padding: 39px clamp(24px, 4vw, 64px) 88px;
+  margin: 0;
+  animation: vos-context-enter var(--vos-motion-context) ease-out both;
+}
+.vos-workspace-header {
+  margin-bottom: 30px;
+  border-bottom: 1px solid var(--vos-edge-soft);
+  padding-bottom: 30px;
+}
+.vos-workspace-header-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--vos-text-dim);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.11em;
+}
+.vos-header-rule {
+  width: 32px;
+  height: 1px;
+  background: var(--vos-identity);
+}
+.vos-header-slash {
+  color: var(--vos-identity);
+}
+.vos-workspace-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+.vos-workspace-heading h1 {
+  margin: 0;
+  font-size: clamp(38px, 5vw, 68px);
+  line-height: 0.98;
+  font-weight: 630;
+  letter-spacing: -0.065em;
+}
+.vos-workspace-heading h1 span {
+  color: var(--vos-identity);
+}
+.vos-workspace-heading p {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--vos-text-secondary);
+}
+.vos-workspace-position {
+  color: var(--vos-edge);
+  font:
+    70px/0.8 "Inter Variable",
+    sans-serif;
+  letter-spacing: -0.09em;
+}
+.vos-workspace-position small {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.05em;
+  color: var(--vos-text-dim);
+}
+.vos-more-list {
+  display: grid;
+  border-top: 1px solid var(--vos-edge);
+}
+.vos-more-row {
+  min-height: 75px;
+  display: grid;
+  grid-template-columns: 38px 28px 1fr 20px;
+  gap: 20px;
+  align-items: center;
+  border-bottom: 1px solid var(--vos-edge-soft);
+  font-size: 19px;
+}
+.vos-more-row:hover {
+  color: var(--vos-identity);
+  padding-left: 8px;
+}
+.vos-more-index,
+.vos-more-local {
+  color: var(--vos-text-dim);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+}
+.vos-more-local {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 20px 0;
+}
+
+/* Meridional marks, readings, and state glyphs */
+.vos-datum {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 20px;
+  color: var(--vos-text-secondary);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.12em;
+}
+.vos-datum-line {
+  flex: none;
+  width: 26px;
+  height: 1px;
+  background: var(--vos-identity);
+}
+.vos-datum-index {
+  color: var(--vos-identity);
+}
+.vos-datum-action {
+  margin-left: auto;
+  letter-spacing: 0;
+}
+.vos-datum-action a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--vos-text-dim);
+}
+.vos-datum-action a:hover {
+  color: var(--vos-identity);
+}
+.vos-metric-label {
+  color: var(--vos-text-dim);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.1em;
+}
+.vos-metric-reading {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 18px 0 7px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.vos-metric-reading strong {
+  font-size: clamp(38px, 4.7vw, 67px);
+  font-weight: 540;
+  line-height: 0.95;
+  letter-spacing: -0.07em;
+}
+.vos-metric-unit {
+  color: var(--vos-identity);
+  font:
+    12px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.08em;
+}
+.vos-metric-annotation {
+  color: var(--vos-text-dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.vos-metric-annotation i {
+  display: inline-block;
+  width: 16px;
+  height: 1px;
+  background: var(--vos-edge);
+  vertical-align: middle;
+  margin: 0 6px;
+}
+.vos-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--vos-text-secondary);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.vos-signal-bars {
+  width: 11px;
+  height: 12px;
+  display: inline-flex;
+  align-items: end;
+  gap: 2px;
+}
+.vos-signal-bars i {
+  width: 2px;
+  height: 4px;
+  background: var(--vos-text-dim);
+}
+.vos-signal-bars i:nth-child(2) {
+  height: 8px;
+}
+.vos-signal-bars i:nth-child(3) {
+  height: 12px;
+}
+.vos-signal[data-tone="active"] .vos-signal-bars i {
+  background: var(--vos-identity);
+}
+.vos-signal[data-tone="warning"] .vos-signal-bars i {
+  background: var(--vos-warning);
+}
+.vos-signal[data-tone="danger"] .vos-signal-bars i {
+  background: var(--vos-danger);
+}
+.vos-signal[data-tone="complete"] .vos-signal-bars i {
+  background: var(--vos-success);
+}
+.vos-signal[data-tone="complete"] .vos-signal-bars i:nth-child(1) {
+  height: 12px;
+}
+.vos-signal[data-tone="complete"] .vos-signal-bars i:nth-child(3) {
+  height: 4px;
+}
+
+/* Home is an operating overview, not a grid of metrics. */
+.vos-home {
+  min-width: 0;
+}
+.vos-home-meta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 21px;
+  color: var(--vos-text-dim);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.1em;
+}
+.vos-home-meta > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--vos-identity);
+}
+.vos-home-meta i {
+  width: 6px;
+  height: 6px;
+  background: var(--vos-identity);
+  transform: rotate(45deg);
+}
+.vos-home-meta .demo-tag {
+  margin-left: auto;
+}
+.vos-now {
+  display: grid;
+  grid-template-columns: minmax(0, 1.42fr) minmax(320px, 0.9fr);
+  min-height: 450px;
+  border-top: 1px solid var(--vos-edge);
+  border-bottom: 1px solid var(--vos-edge);
+}
+.vos-now-primary {
+  padding: 31px clamp(24px, 3.6vw, 54px) 32px 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.vos-now-primary h1 {
+  font-size: clamp(49px, 5.6vw, 82px);
+  line-height: 0.99;
+  font-weight: 590;
+  letter-spacing: -0.075em;
+  margin: 28px 0 0;
+}
+.vos-now-primary h1 span {
+  color: var(--vos-identity);
+}
+.vos-now-subtitle {
+  margin: 14px 0 0;
+  color: var(--vos-text-secondary);
+  font-size: 13px;
+}
+.vos-next-action {
+  margin-top: auto;
+  padding-top: 29px;
+}
+.vos-next-label,
+.vos-next-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  color: var(--vos-text-dim);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.05em;
+}
+.vos-next-action > a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0 15px;
+  border-bottom: 1px solid var(--vos-identity);
+  color: var(--vos-text-primary);
+  font-size: clamp(18px, 2vw, 26px);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+.vos-next-action > a:hover {
+  color: var(--vos-identity);
+  padding-left: 8px;
+}
+.vos-next-action > a svg {
+  color: var(--vos-identity);
+  flex: none;
+}
+.vos-next-foot {
+  padding-top: 10px;
+  font-size: 9px;
+}
+.vos-now-finance {
+  position: relative;
+  min-width: 0;
+  border-left: 1px solid var(--vos-edge);
+  background: var(--vos-surface);
+  padding: 31px clamp(24px, 3vw, 46px) 32px;
+  display: flex;
+  flex-direction: column;
+}
+.vos-now-finance::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 13px;
+  height: 13px;
+  border-right: 2px solid var(--vos-identity);
+  border-bottom: 2px solid var(--vos-identity);
+}
+.vos-now-finance .vos-metric {
+  margin-top: 55px;
+}
+.vos-instrument-rail {
+  display: flex;
+  gap: 4px;
+  align-items: end;
+  margin: 31px 0 28px;
+  height: 16px;
+}
+.vos-instrument-rail i {
+  flex: 1;
+  height: 7px;
+  background: var(--vos-edge);
+  transform: skewX(-14deg);
+}
+.vos-instrument-rail i:nth-child(4n) {
+  height: 13px;
+}
+.vos-instrument-rail i.filled {
+  background: var(--vos-identity);
+}
+.vos-finance-bottom {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--vos-edge);
+}
+.vos-finance-bottom span {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.vos-finance-bottom small {
+  color: var(--vos-text-dim);
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  white-space: nowrap;
+}
+.vos-finance-bottom strong {
+  color: var(--vos-text-primary);
+  font-size: 13px;
+  font-weight: 560;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.vos-home-middle {
+  display: grid;
+  grid-template-columns: minmax(0, 1.42fr) minmax(320px, 0.9fr);
+  border-bottom: 1px solid var(--vos-edge);
+}
+.vos-attention,
+.vos-recent {
+  min-width: 0;
+  padding: 35px clamp(24px, 3.6vw, 54px) 40px 0;
+}
+.vos-recent {
+  padding-left: clamp(24px, 3vw, 46px);
+  padding-right: clamp(24px, 3vw, 46px);
+  border-left: 1px solid var(--vos-edge);
+  background: color-mix(
+    in srgb,
+    var(--vos-surface) 54%,
+    var(--vos-bg-workspace)
+  );
+}
+.vos-section-lead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 15px;
+  margin: 21px 0 22px;
+}
+.vos-section-lead strong {
+  font-size: clamp(19px, 2vw, 26px);
+  font-weight: 530;
+  letter-spacing: -0.04em;
+}
+.vos-section-lead > span {
+  color: var(--vos-text-dim);
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  white-space: nowrap;
+}
+.vos-attention-row {
+  display: grid;
+  grid-template-columns: 30px 76px minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 13px;
+  min-height: 58px;
+  border-top: 1px solid var(--vos-edge-soft);
+}
+.vos-attention-row:hover,
+.vos-recent-list a:hover,
+.vos-project-runway-row:hover {
+  background: var(--vos-identity-soft);
+  padding-left: 7px;
+}
+.vos-attention-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 550;
+}
+.vos-attention-row > svg,
+.vos-recent-list svg {
+  color: var(--vos-text-dim);
+}
+.vos-row-index {
+  color: var(--vos-text-dim);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+}
+.vos-row-detail {
+  color: var(--vos-text-dim);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.vos-clear-state,
+.vos-empty-recent {
+  color: var(--vos-text-dim);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.vos-clear-state a,
+.vos-empty-recent a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--vos-identity);
+}
+.vos-recent-list a {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 27px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 13px;
+  border-top: 1px solid var(--vos-edge-soft);
+}
+.vos-recent-list strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 560;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vos-recent-list small {
+  color: var(--vos-text-dim);
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+}
+.vos-active-work {
+  padding: 38px 0 28px;
+  border-bottom: 1px solid var(--vos-edge);
+}
+.vos-project-runway-row {
+  display: grid;
+  grid-template-columns: 34px minmax(160px, 1.5fr) 95px minmax(110px, 1fr) 18px;
+  gap: 17px;
+  align-items: center;
+  min-height: 68px;
+  border-top: 1px solid var(--vos-edge-soft);
+}
+.vos-runway-name {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 550;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vos-runway-name small {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--vos-text-dim);
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vos-runway-progress {
+  position: relative;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  border-bottom: 1px solid var(--vos-edge);
+  color: var(--vos-text-dim);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+}
+.vos-runway-progress i {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--vos-identity);
+}
+.vos-runway-progress b {
+  font-weight: 400;
+}
+.vos-project-runway-row > svg {
+  color: var(--vos-text-dim);
+}
+.vos-home-links {
+  padding: 36px 0;
+  border-bottom: 1px solid var(--vos-edge);
+}
+.vos-home-links-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 28px;
+  margin-top: 20px;
+}
+.vos-home-links-list a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--vos-edge-soft);
+}
+.vos-home-links-list a svg:first-child {
+  color: var(--vos-identity);
+}
+.vos-home-links-list a svg:last-child {
+  color: var(--vos-text-dim);
+}
+.vos-home-links-list a:hover {
+  color: var(--vos-identity);
+}
+.vos-home-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 26px;
+  color: var(--vos-text-dim);
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.1em;
+}
+
+/* Shared workspace controls: clear hierarchy without default dashboard cards. */
+.vos-shell .page-stack {
+  gap: 27px;
+}
+.vos-shell .card {
+  border: 0;
+  border-bottom: 1px solid var(--vos-edge-soft);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 16px 0 25px;
+}
+.vos-shell .card-header {
+  margin-bottom: 20px;
+}
+.vos-shell .card-header .eyebrow,
+.vos-shell .toolbar-heading .eyebrow,
+.vos-shell .eyebrow {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.1em;
+  color: var(--vos-identity);
+}
+.vos-shell .card-header .eyebrow::before,
+.vos-shell .toolbar-heading .eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 1px;
+  margin: 0 9px 3px 0;
+  background: var(--vos-identity);
+}
+.vos-shell .card-header h2,
+.vos-shell .toolbar-heading h2 {
+  font-size: clamp(20px, 2vw, 27px);
+  font-weight: 550;
+  letter-spacing: -0.045em;
+}
+.vos-shell .section-toolbar {
+  min-height: 43px;
+}
+.vos-shell .text-link {
+  color: var(--vos-text-dim);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+}
+.vos-shell .text-link:hover {
+  color: var(--vos-identity);
+}
+.vos-shell .button {
+  border-radius: var(--vos-radius-control);
+  min-height: 39px;
+  padding: 0 15px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+.vos-shell .button-primary {
+  background: var(--vos-identity);
+  color: var(--vos-bg-root);
+  border-color: var(--vos-identity);
+}
+.vos-shell .button-primary:hover {
+  background: var(--vos-identity-active);
+  border-color: var(--vos-identity-active);
+  transform: translateY(-1px);
+}
+.vos-shell .button-secondary {
+  background: var(--vos-surface);
+  border-color: var(--vos-edge);
+  color: var(--vos-text-primary);
+}
+.vos-shell .button-secondary:hover {
+  border-color: var(--vos-identity);
+}
+.vos-shell .button-ghost {
+  background: transparent;
+  color: var(--vos-text-secondary);
+}
+.vos-shell .button-danger {
+  background: var(--vos-danger);
+  color: var(--vos-bg-root);
+}
+.vos-shell .icon-button {
+  border-radius: 3px;
+}
+.vos-shell .input,
+.vos-shell .filter-search,
+.vos-shell .quick-task-card,
+.vos-shell .filter-toggle {
+  border-radius: var(--vos-radius-control);
+  background: var(--vos-surface);
+  border-color: var(--vos-edge);
+}
+.vos-shell .input:focus,
+.vos-shell .filter-search:focus-within {
+  border-color: var(--vos-identity);
+  box-shadow: 0 0 0 3px var(--vos-identity-soft);
+}
+.vos-shell .select {
+  color: var(--vos-text-primary);
+}
+.vos-shell .field-label {
+  color: var(--vos-text-secondary);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.05em;
+}
+.vos-shell .segmented {
+  border: 0;
+  border-bottom: 1px solid var(--vos-edge);
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  gap: 2px;
+}
+.vos-shell .segmented button {
+  border-radius: 0;
+  padding: 10px 13px;
+  color: var(--vos-text-dim);
+  font-size: 11px;
+}
+.vos-shell .segmented button.active {
+  box-shadow: none;
+  color: var(--vos-identity);
+  background: transparent;
+  border-bottom: 2px solid var(--vos-identity);
+}
+.vos-shell .segmented button:hover {
+  color: var(--vos-text-primary);
+}
+.vos-shell .filter-row {
+  gap: 13px;
+}
+.vos-shell .filter-search {
+  min-height: 39px;
+  max-width: 440px;
+}
+.vos-shell .filter-selects {
+  gap: 8px;
+}
+.vos-shell .stat-strip {
+  display: flex;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  border-bottom: 1px solid var(--vos-edge-soft);
+}
+.vos-shell .stat-strip > div {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--vos-edge-soft);
+  padding: 14px 24px 19px;
+}
+.vos-shell .stat-strip > div:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+.vos-shell .stat-strip strong {
+  font-weight: 530;
+  font-size: 29px;
+  letter-spacing: -0.06em;
+  font-variant-numeric: tabular-nums;
+}
+.vos-shell .stat-strip span,
+.vos-shell .money-metrics span {
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.09em;
+  color: var(--vos-text-dim);
+}
+.vos-shell .badge {
+  background: transparent;
+  border: 1px solid var(--vos-edge);
+  border-radius: 2px;
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.02em;
+  padding: 3px 6px;
+}
+.vos-shell .badge-red {
+  border-color: color-mix(in srgb, var(--vos-danger) 48%, var(--vos-edge));
+  color: var(--vos-danger);
+}
+.vos-shell .badge-amber {
+  border-color: color-mix(in srgb, var(--vos-warning) 48%, var(--vos-edge));
+  color: var(--vos-warning);
+}
+.vos-shell .badge-green {
+  border-color: color-mix(in srgb, var(--vos-success) 48%, var(--vos-edge));
+  color: var(--vos-success);
+}
+.vos-shell .badge-purple,
+.vos-shell .badge-blue {
+  border-color: color-mix(in srgb, var(--vos-identity) 43%, var(--vos-edge));
+  color: var(--vos-identity);
+}
+.vos-shell .demo-tag {
+  border-radius: 2px;
+  color: var(--vos-warning);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--vos-warning) 45%, var(--vos-edge));
+}
+.vos-shell .progress-track {
+  height: 3px;
+  border-radius: 0;
+  background: var(--vos-edge);
+}
+.vos-shell .progress-track > div {
+  border-radius: 0;
+  background: var(--vos-identity);
+  transition: width var(--vos-motion-context) ease-out;
+}
+.vos-shell .tag-row span {
+  border-radius: 2px;
+  background: var(--vos-surface);
+  color: var(--vos-text-secondary);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+}
+.vos-shell .empty-orbit {
+  border-radius: 0;
+  border-color: var(--vos-edge);
+  background: var(--vos-surface);
+  transform: rotate(-8deg);
+}
+
+/* Task station */
+.vos-shell .quick-task-card {
+  padding: 0 15px;
+  border: 1px solid var(--vos-edge);
+}
+.vos-shell .quick-task {
+  min-height: 48px;
+}
+.vos-shell .task-list-card {
+  padding: 0;
+  border-top: 1px solid var(--vos-edge);
+  border-bottom: 1px solid var(--vos-edge);
+}
+.vos-shell .task-row {
+  min-height: 66px;
+  padding: 10px 9px;
+  border-bottom-color: var(--vos-edge-soft);
+}
+.vos-shell .task-row:hover {
+  background: var(--vos-identity-soft);
+}
+.vos-shell .task-check {
+  color: var(--vos-text-dim);
+}
+.vos-shell .task-check:hover,
+.vos-shell .task-done .task-check {
+  color: var(--vos-identity);
+}
+.vos-shell .task-main strong {
+  font-size: 13px;
+  font-weight: 560;
+}
+.vos-shell .task-main span {
+  color: var(--vos-text-dim);
+}
+.vos-shell .task-status-label {
+  min-width: 105px;
+  text-align: left;
+}
+.vos-shell .kanban-column {
+  border: 1px solid var(--vos-edge);
+  border-radius: 0;
+  background: color-mix(
+    in srgb,
+    var(--vos-surface) 60%,
+    var(--vos-bg-workspace)
+  );
+}
+.vos-shell .kanban-title {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.04em;
+}
+.vos-shell .kanban-column .task-row {
+  background: var(--vos-surface);
+  border: 1px solid var(--vos-edge-soft);
+  border-radius: 0;
+}
+.vos-shell .kanban-empty {
+  border-radius: 0;
+}
+
+/* Project dossiers */
+.vos-shell .project-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.vos-shell .project-card {
+  position: relative;
+  min-height: 270px;
+  padding: 22px 23px 20px;
+  border: 1px solid var(--vos-edge);
+  border-left: 2px solid var(--vos-identity);
+  background: var(--vos-surface);
+}
+.vos-shell .project-card::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 15px;
+  height: 15px;
+  border-right: 2px solid var(--vos-identity);
+  border-top: 2px solid var(--vos-identity);
+  opacity: 0.6;
+}
+.vos-shell .project-card:hover {
+  background: var(--vos-surface-raised);
+  border-color: var(--vos-identity);
+  transform: translateY(-2px);
+}
+.vos-shell .project-mark {
+  width: 33px;
+  height: 33px;
+  border-radius: 0;
+  background: transparent;
+  border-color: var(--vos-edge);
+  color: var(--vos-identity);
+  font:
+    18px "IBM Plex Mono",
+    monospace;
+}
+.vos-shell .project-card-title h3 {
+  font-size: 22px;
+  font-weight: 540;
+  letter-spacing: -0.04em;
+}
+.vos-shell .project-card-title p {
+  font-size: 12px;
+  min-height: 30px;
+}
+.vos-shell .project-badges {
+  align-items: center;
+  gap: 10px;
+}
+.vos-shell .project-progress-label {
+  margin-top: 23px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+}
+.vos-shell .project-next {
+  margin-top: 19px;
+  border-top-color: var(--vos-edge);
+}
+.vos-shell .project-next > span {
+  font-family: "IBM Plex Mono", monospace;
+}
+.vos-shell .project-next button {
+  font-size: 12px;
+}
+.vos-shell .project-card-foot {
+  border-top: 1px solid var(--vos-edge-soft);
+  padding-top: 10px;
+}
+
+/* Money instrument plane and selected chart reading */
+.vos-shell .money-hero {
+  min-height: 225px;
+  padding: 32px 37px;
+  border: 1px solid var(--vos-edge);
+  border-left: 3px solid var(--vos-identity);
+  border-radius: 0;
+  background: var(--vos-surface);
+  box-shadow: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+.vos-shell .money-hero::before,
+.vos-shell .money-hero::after {
+  display: none;
+}
+.vos-money-hero-reading {
+  min-width: 0;
+}
+.vos-shell .money-hero .eyebrow {
+  color: var(--vos-identity);
+}
+.vos-money-number {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin: 17px 0 13px;
+}
+.vos-shell .money-hero .vos-money-number strong {
+  font-size: clamp(46px, 5.6vw, 75px);
+  line-height: 0.9;
+  font-weight: 530;
+  letter-spacing: -0.07em;
+  white-space: nowrap;
+}
+.vos-money-number > span {
+  font:
+    13px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.08em;
+  color: var(--vos-identity);
+}
+.vos-shell .money-hero p {
+  color: var(--vos-text-secondary);
+  font-size: 11px;
+}
+.vos-shell .money-hero p span {
+  color: var(--vos-text-dim);
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+}
+.vos-shell .money-hero p i {
+  display: inline-block;
+  width: 20px;
+  height: 1px;
+  background: var(--vos-edge);
+  margin: 0 8px 3px;
+}
+.vos-money-hero-axis {
+  align-self: stretch;
+  width: 180px;
+  flex: none;
+  border-left: 1px solid var(--vos-edge);
+  padding-left: 25px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.vos-money-hero-axis > span {
+  color: var(--vos-text-dim);
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.08em;
+}
+.vos-money-hero-axis > div {
+  display: flex;
+  gap: 3px;
+  height: 23px;
+  align-items: end;
+}
+.vos-money-hero-axis i {
+  flex: 1;
+  height: 9px;
+  background: var(--vos-edge);
+  transform: skewX(-12deg);
+}
+.vos-money-hero-axis i:nth-child(4n) {
+  height: 17px;
+}
+.vos-money-hero-axis i.filled {
+  background: var(--vos-identity);
+}
+.vos-money-hero-axis strong {
+  font:
+    24px "Inter Variable",
+    sans-serif;
+  font-weight: 540;
+}
+.vos-money-hero-axis small {
+  display: block;
+  margin-top: 4px;
+  color: var(--vos-text-dim);
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+}
+.vos-shell .money-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--vos-edge-soft);
+  border-bottom: 1px solid var(--vos-edge-soft);
+  gap: 0;
+}
+.vos-shell .money-metrics .card {
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--vos-edge-soft);
+  padding: 17px 24px 19px;
+  border-radius: 0;
+}
+.vos-shell .money-metrics .card:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+.vos-shell .money-metrics strong {
+  font-size: clamp(20px, 2.2vw, 29px);
+  font-weight: 530;
+  letter-spacing: -0.06em;
+}
+.vos-shell .money-metrics small {
+  color: var(--vos-text-dim);
+}
+.vos-shell .money-toolbar {
+  margin-top: 4px;
+}
+.vos-shell .money-overview-grid {
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.8fr);
+  gap: 24px;
+}
+.vos-shell .money-overview-grid .card {
+  border: 1px solid var(--vos-edge);
+  background: var(--vos-surface);
+  padding: 25px;
+}
+.vos-shell .chart-card {
+  background: var(--vos-surface);
+}
+.vos-shell .chart-readout {
+  border-bottom: 1px solid var(--vos-edge-soft);
+}
+.vos-shell .bar-chart {
+  position: relative;
+  background: repeating-linear-gradient(
+    to top,
+    transparent 0,
+    transparent calc(25% - 1px),
+    var(--vos-edge-soft) calc(25% - 1px),
+    var(--vos-edge-soft) 25%
+  );
+}
+.vos-shell .bar-group {
+  position: relative;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.vos-shell .bar-group.active::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 22px;
+  width: 1px;
+  background: var(--vos-identity);
+  opacity: 0.55;
+}
+.vos-shell .bar-group.active {
+  background: var(--vos-identity-soft);
+}
+.vos-shell .bar {
+  position: relative;
+  border-radius: 0;
+  transition:
+    height var(--vos-motion-context),
+    filter var(--vos-motion-fast);
+}
+.vos-shell .bar-income {
+  background: linear-gradient(
+    to top,
+    var(--vos-identity),
+    var(--vos-identity-active)
+  );
+}
+.vos-shell .bar-expense {
+  background: linear-gradient(to top, var(--vos-info), var(--vos-text-dim));
+}
+.vos-shell .bar-group.active .bar-income::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: calc(50% - 3px);
+  width: 6px;
+  height: 6px;
+  transform: rotate(45deg);
+  background: var(--vos-identity-active);
+}
+.vos-shell .bar-group:hover .bar,
+.vos-shell .bar-group.active .bar {
+  filter: brightness(1.17);
+}
+.vos-shell .legend-income {
+  background: var(--vos-identity);
+}
+.vos-shell .legend-expense {
+  background: var(--vos-info);
+}
+.vos-shell .data-row {
+  border-bottom-color: var(--vos-edge-soft);
+}
+.vos-shell .data-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Library workspaces use the same datum grammar at different densities. */
+.vos-ai-register {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(310px, 1fr);
+  min-height: 190px;
+  border: 1px solid var(--vos-edge);
+  border-left: 2px solid var(--vos-identity);
+  background: var(--vos-surface);
+}
+.vos-ai-register-lead {
+  padding: 26px 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.vos-ai-register h2 {
+  margin: 20px 0 5px;
+  font-size: clamp(29px, 3vw, 43px);
+  line-height: 1.04;
+  font-weight: 550;
+  letter-spacing: -0.06em;
+}
+.vos-ai-register h2 span {
+  color: var(--vos-identity);
+}
+.vos-ai-register p {
+  margin: 0 0 19px;
+  color: var(--vos-text-secondary);
+}
+.vos-ai-register-readings {
+  padding: 19px 27px;
+  display: grid;
+  align-content: center;
+  border-left: 1px solid var(--vos-edge);
+}
+.vos-ai-register-readings .vos-metric {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--vos-edge-soft);
+}
+.vos-ai-register-readings .vos-metric:last-child {
+  border-bottom: 0;
+}
+.vos-ai-register-readings .vos-metric-reading strong {
+  font-size: 27px;
+}
+.vos-ai-register-readings .vos-metric-annotation {
+  display: none;
+}
+.vos-shell .prompt-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+.vos-shell .prompt-card {
+  position: relative;
+  border: 1px solid var(--vos-edge);
+  border-radius: 0;
+  background: var(--vos-surface);
+  padding: 22px 23px 17px;
+  min-height: 230px;
+}
+.vos-shell .prompt-card::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: 24px;
+  height: 2px;
+  background: var(--vos-identity);
+}
+.vos-shell .prompt-card:hover {
+  background: var(--vos-surface-raised);
+  border-color: var(--vos-identity);
+}
+.vos-shell .prompt-card h3 {
+  font-size: 20px;
+  font-weight: 550;
+  letter-spacing: -0.04em;
+}
+.vos-shell .prompt-card > p {
+  color: var(--vos-text-secondary);
+}
+.vos-shell .prompt-card-meta {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  color: var(--vos-text-dim);
+}
+.vos-shell .prompt-card-actions {
+  border-top: 1px solid var(--vos-edge);
+  padding-top: 12px;
+}
+.vos-shell .prompt-card-actions .button.copied {
+  color: var(--vos-success);
+  border-color: var(--vos-success);
+}
+.vos-shell .note-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 25px;
+}
+.vos-shell .note-card {
+  padding: 22px 0;
+  border: 0;
+  border-top: 1px solid var(--vos-edge);
+  border-bottom: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.vos-shell .note-card:hover {
+  background: transparent;
+  border-top-color: var(--vos-identity);
+}
+.vos-shell .note-icon {
+  border: 0;
+  border-radius: 0;
+  background: var(--vos-identity-soft);
+  color: var(--vos-identity);
+}
+.vos-shell .note-card-main h3 {
+  font-size: 20px;
+  font-weight: 540;
+  letter-spacing: -0.04em;
+}
+.vos-shell .note-card-main p {
+  color: var(--vos-text-secondary);
+}
+.vos-shell .note-card-foot {
+  border-top: 1px solid var(--vos-edge-soft);
+  padding-top: 12px;
+}
+.vos-shell .note-editor .textarea {
+  min-height: 280px;
+  font-family: "IBM Plex Mono", monospace;
+  line-height: 1.7;
+}
+.vos-shell .toolbox-layout {
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 0;
+  border: 1px solid var(--vos-edge);
+  background: var(--vos-surface);
+}
+.vos-shell .tool-menu {
+  border-right: 1px solid var(--vos-edge);
+  padding: 18px 9px;
+  background: var(--vos-bg-root);
+}
+.vos-shell .tool-menu .eyebrow {
+  display: block;
+  padding: 0 12px 13px;
+}
+.vos-shell .tool-menu button {
+  position: relative;
+  border-radius: 0;
+  min-height: 42px;
+  font-size: 11px;
+}
+.vos-shell .tool-menu button.active {
+  color: var(--vos-identity);
+  background: var(--vos-identity-soft);
+}
+.vos-shell .tool-menu button.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 2px;
+  height: 22px;
+  background: var(--vos-identity);
+}
+.vos-shell .tool-panel {
+  padding: 26px 30px;
+  border: 0;
+  background: var(--vos-surface);
+}
+.vos-shell .tool-big-icon {
+  border-radius: 0;
+  background: var(--vos-identity-soft);
+  color: var(--vos-identity);
+}
+.vos-shell .tool-panel-header {
+  border-bottom: 1px solid var(--vos-edge);
+  padding-bottom: 20px;
+}
+.vos-shell .tool-panel h2 {
+  font-size: 24px;
+  font-weight: 550;
+}
+.vos-shell .tool-output {
+  border-radius: 0;
+  border-color: var(--vos-edge);
+  background: var(--vos-bg-root);
+}
+.vos-shell .link-group {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--vos-edge);
+}
+.vos-shell .link-group .card-header {
+  margin-bottom: 12px;
+}
+.vos-shell .link-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+}
+.vos-shell .link-tile {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--vos-edge-soft);
+  border-radius: 0;
+}
+.vos-shell .link-tile:hover {
+  background: var(--vos-identity-soft);
+  border-color: var(--vos-identity);
+}
+.vos-shell .link-tile-icon {
+  border-radius: 0;
+  background: var(--vos-identity-soft);
+  color: var(--vos-identity);
+}
+.vos-shell .link-actions {
+  border-top: 1px solid var(--vos-edge-soft);
+}
+.vos-shell .settings-layout {
+  gap: 38px;
+}
+.vos-shell .settings-main .card,
+.vos-shell .settings-side .card {
+  border: 0;
+  border-top: 1px solid var(--vos-edge);
+  padding: 25px 0 31px;
+  background: transparent;
+  border-radius: 0;
+}
+.vos-shell .settings-check {
+  border-color: var(--vos-edge-soft);
+}
+.vos-shell .backup-card {
+  border-top-color: var(--vos-identity) !important;
+}
+.vos-shell .preview-counts span,
+.vos-shell .import-preview {
+  border-radius: 0;
+}
+
+/* Command is a system layer; focus is an attached work plane. */
+.palette-backdrop {
+  z-index: 130;
+  background: rgb(7 13 9 / 65%);
+  backdrop-filter: blur(7px);
+}
+.palette {
+  border: 1px solid var(--vos-identity);
+  border-radius: 2px 12px 2px 2px;
+  background: var(--vos-surface);
+  box-shadow: var(--shadow);
+}
+.palette::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: 42px;
+  height: 2px;
+  background: var(--vos-identity);
+}
+.palette-heading {
+  border-bottom: 1px solid var(--vos-edge);
+}
+.palette-mark {
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--vos-identity);
+  color: var(--vos-identity);
+  font-size: 18px;
+}
+.palette-mark span {
+  color: var(--vos-identity);
+}
+.palette-label {
+  color: var(--vos-identity);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.1em;
+}
+.palette-result {
+  border-radius: 0;
+  border-left: 2px solid transparent;
+}
+.palette-result.selected,
+.palette-result:hover {
+  background: var(--vos-identity-soft);
+  border-left-color: var(--vos-identity);
+}
+.palette-result-icon {
+  border-radius: 0;
+  background: transparent;
+  color: var(--vos-text-dim);
+}
+.palette-result.selected .palette-result-icon {
+  color: var(--vos-identity);
+  background: transparent;
+}
+.palette-kind {
+  font-family: "IBM Plex Mono", monospace;
+}
+.focus-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+}
+.focus-panel {
+  position: absolute;
+  top: 72px;
+  right: 0;
+  bottom: 0;
+  width: min(560px, calc(100vw - 82px));
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  border-left: 2px solid var(--vos-identity);
+  border-radius: 0;
+  background: var(--vos-surface-focus);
+  box-shadow: -24px 0 65px rgb(0 0 0 / 29%);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  animation: vos-focus-enter var(--vos-motion-focus)
+    cubic-bezier(0.18, 0.72, 0.21, 1) both;
+}
+.focus-panel.modal-wide {
+  width: min(680px, calc(100vw - 82px));
+}
+.focus-panel .modal-header {
+  flex: none;
+  min-height: 95px;
+  padding: 19px 27px;
+  border-bottom: 1px solid var(--vos-edge);
+}
+.focus-panel .modal-header h2 {
+  font-size: 24px;
+  font-weight: 550;
+  letter-spacing: -0.04em;
+  margin: 7px 0 0;
+}
+.focus-panel-caption {
+  color: var(--vos-identity);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 0.1em;
+}
+.focus-panel .modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 25px 27px 35px;
+}
+body:has(.focus-panel) .vos-workspace {
+  opacity: 0.5;
+  filter: saturate(0.65);
+  transform: translateX(-8px);
+  transition:
+    opacity var(--vos-motion-focus),
+    filter var(--vos-motion-focus),
+    transform var(--vos-motion-focus);
+}
+.modal-backdrop {
+  z-index: 110;
+  background: rgb(7 13 9 / 64%);
+  backdrop-filter: blur(5px);
+}
+.modal:not(.focus-panel) {
+  border: 1px solid var(--vos-edge);
+  border-top: 2px solid var(--vos-identity);
+  border-radius: 2px 10px 2px 2px;
+  background: var(--vos-surface);
+  box-shadow: var(--shadow);
+}
+.modal-header {
+  border-bottom: 1px solid var(--vos-edge);
+}
+.modal-header h2 {
+  font-weight: 550;
+  letter-spacing: -0.04em;
+}
+.toast {
+  border-radius: 2px;
+  border-left: 2px solid var(--vos-success);
+  background: var(--vos-surface-raised);
+}
+.toast-error {
+  border-left-color: var(--vos-danger);
+}
+.vos-context-menu {
+  position: fixed;
+  z-index: 160;
+  width: 228px;
+  padding: 6px;
+  background: var(--vos-surface-raised);
+  border: 1px solid var(--vos-identity);
+  border-radius: 2px 8px 2px 2px;
+  box-shadow: var(--shadow);
+  animation: vos-menu-enter var(--vos-motion-fast) ease-out both;
+}
+.vos-context-menu-title {
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid var(--vos-edge);
+  color: var(--vos-text-dim);
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vos-context-menu button {
+  width: 100%;
+  min-height: 37px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 10px;
+  background: transparent;
+  border: 0;
+  color: var(--vos-text-primary);
+  text-align: left;
+  font-size: 12px;
+}
+.vos-context-menu button:hover,
+.vos-context-menu button:focus-visible {
+  background: var(--vos-identity-soft);
+  color: var(--vos-identity);
+}
+.vos-context-menu button.danger {
+  color: var(--vos-danger);
+}
+
+@keyframes vos-context-enter {
+  from {
+    opacity: 0.84;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes vos-focus-enter {
+  from {
+    opacity: 0.8;
+    transform: translateX(38px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes vos-menu-enter {
+  from {
+    opacity: 0.65;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1180px) {
+  .vos-systembar {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+  .vos-workspace {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+  .vos-system-time {
+    display: none;
+  }
+  .vos-now {
+    grid-template-columns: minmax(0, 1.18fr) minmax(300px, 0.9fr);
+  }
+  .vos-home-middle {
+    grid-template-columns: minmax(0, 1.18fr) minmax(300px, 0.9fr);
+  }
+  .vos-attention-row {
+    grid-template-columns: 25px 61px minmax(0, 1fr) 15px;
+  }
+  .vos-attention-row .vos-row-detail {
+    display: none;
+  }
+}
+@media (max-width: 970px) {
+  .vos-ai-register {
+    grid-template-columns: 1fr;
+  }
+  .vos-ai-register-readings {
+    border-left: 0;
+    border-top: 1px solid var(--vos-edge);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .vos-ai-register-readings .vos-metric {
+    display: block;
+    border-bottom: 0;
+  }
+  .vos-now,
+  .vos-home-middle {
+    grid-template-columns: 1fr;
+  }
+  .vos-now-primary {
+    min-height: 400px;
+    padding-right: 0;
+  }
+  .vos-now-finance {
+    min-height: 260px;
+    border-left: 0;
+    border-top: 1px solid var(--vos-edge);
+  }
+  .vos-now-finance .vos-metric {
+    margin-top: 30px;
+  }
+  .vos-recent {
+    border-left: 0;
+    border-top: 1px solid var(--vos-edge);
+  }
+  .vos-attention {
+    padding-right: 0;
+  }
+  .vos-shell .money-overview-grid {
+    grid-template-columns: 1fr;
+  }
+  .vos-shell .money-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .vos-shell .money-metrics .card:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid var(--vos-edge-soft);
+    padding-left: 0;
+  }
+  .vos-shell .money-metrics .card:nth-child(4) {
+    border-top: 1px solid var(--vos-edge-soft);
+  }
+  .vos-shell .settings-layout {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .vos-ai-register-lead {
+    padding: 23px 22px;
+  }
+  .vos-ai-register-readings {
+    padding: 14px 22px;
+    gap: 8px;
+  }
+  .vos-ai-register-readings .vos-metric-reading strong {
+    font-size: 24px;
+  }
+  .vos-dock {
+    display: none;
+  }
+  .vos-main,
+  .vos-dock-expanded .vos-main {
+    margin-left: 0;
+  }
+  .vos-systembar {
+    height: calc(61px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 16px 0;
+    gap: 8px;
+  }
+  .vos-system-left,
+  .vos-system-right {
+    gap: 11px;
+  }
+  .vos-mobile-mark {
+    position: relative;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--vos-identity);
+    color: var(--vos-identity);
+    font-size: 18px;
+    font-weight: 650;
+    letter-spacing: -0.08em;
+  }
+  .vos-mobile-mark i {
+    width: 5px;
+    height: 5px;
+    right: -2px;
+    bottom: -2px;
+  }
+  .vos-system-code,
+  .vos-system-divider,
+  .vos-system-time {
+    display: none;
+  }
+  .vos-system-context {
+    font-size: 10px;
+  }
+  .vos-local-state {
+    font-size: 9px;
+  }
+  .vos-command-trigger {
+    min-width: 36px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+  }
+  .vos-command-trigger span,
+  .vos-command-trigger kbd {
+    display: none;
+  }
+  .vos-system-create {
+    display: none;
+  }
+  .vos-workspace {
+    padding: 25px 18px calc(113px + env(safe-area-inset-bottom));
+  }
+  .vos-workspace-header {
+    padding-bottom: 21px;
+    margin-bottom: 22px;
+  }
+  .vos-workspace-heading h1 {
+    font-size: 42px;
+  }
+  .vos-workspace-heading p {
+    font-size: 12px;
+  }
+  .vos-workspace-position {
+    font-size: 45px;
+  }
+  .vos-mobile-dock {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 65;
+    height: calc(72px + env(safe-area-inset-bottom));
+    padding: 4px 9px env(safe-area-inset-bottom);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    background: color-mix(in srgb, var(--vos-bg-root) 94%, transparent);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--vos-edge);
+  }
+  .vos-mobile-dock-link {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: var(--vos-text-dim);
+    min-width: 0;
+    font-size: 9px;
+    font-weight: 580;
+  }
+  .vos-mobile-dock-link.active {
+    color: var(--vos-identity);
+    background: var(--vos-identity-soft);
+  }
+  .vos-mobile-dock-link.active::before {
+    content: "";
+    position: absolute;
+    top: -5px;
+    left: 18%;
+    right: 18%;
+    height: 2px;
+    background: var(--vos-identity);
+  }
+  .vos-mobile-dock-index {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    color: var(--vos-text-dim);
+    font:
+      8px "IBM Plex Mono",
+      monospace;
+  }
+  .vos-mobile-command {
+    position: absolute;
+    right: 15px;
+    top: -47px;
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    background: var(--vos-identity);
+    color: var(--vos-bg-root);
+    border: 1px solid var(--vos-identity);
+    border-radius: 1px 8px 1px 1px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 25%);
+  }
+  .vos-mobile-command::after {
+    content: "";
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    width: 7px;
+    height: 7px;
+    background: var(--vos-bg-root);
+    border: 1px solid var(--vos-identity);
+    transform: rotate(45deg);
+  }
+  .vos-now-primary {
+    min-height: 350px;
+  }
+  .vos-now-primary h1 {
+    font-size: clamp(50px, 10vw, 70px);
+  }
+  .vos-now-finance {
+    padding: 27px 22px 28px;
+  }
+  .vos-attention,
+  .vos-recent {
+    padding: 29px 0 31px;
+  }
+  .vos-recent {
+    padding-left: 0;
+    padding-right: 0;
+    background: transparent;
+  }
+  .vos-shell .project-grid,
+  .vos-shell .prompt-grid,
+  .vos-shell .note-grid,
+  .vos-shell .link-grid {
+    grid-template-columns: 1fr;
+  }
+  .vos-shell .project-card {
+    min-height: 0;
+  }
+  .vos-shell .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .vos-shell .stat-strip > div {
+    padding: 14px 0;
+    border-left: 0;
+    border-top: 1px solid var(--vos-edge-soft);
+  }
+  .vos-shell .stat-strip > div:nth-child(odd) {
+    border-right: 1px solid var(--vos-edge-soft);
+  }
+  .vos-shell .stat-strip > div:nth-child(even) {
+    padding-left: 17px;
+  }
+  .vos-shell .stat-strip > div:first-child,
+  .vos-shell .stat-strip > div:nth-child(2) {
+    border-top: 0;
+  }
+  .vos-shell .filter-row {
+    flex-wrap: wrap;
+  }
+  .vos-shell .filter-search {
+    max-width: none;
+    width: 100%;
+    flex-basis: 100%;
+  }
+  .vos-shell .filter-selects {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .vos-shell .filter-selects::-webkit-scrollbar {
+    display: none;
+  }
+  .vos-shell .section-toolbar {
+    flex-wrap: wrap;
+  }
+  .vos-shell .money-hero {
+    min-height: 0;
+    padding: 26px 22px;
+  }
+  .vos-money-hero-axis {
+    display: none;
+  }
+  .vos-shell .money-hero .vos-money-number strong {
+    font-size: clamp(44px, 10vw, 65px);
+  }
+  .vos-shell .toolbox-layout {
+    display: block;
+    border: 0;
+    background: transparent;
+  }
+  .vos-shell .tool-menu {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    border: 0;
+    border-bottom: 1px solid var(--vos-edge);
+    padding: 0 0 9px;
+    background: transparent;
+    scrollbar-width: none;
+  }
+  .vos-shell .tool-menu .eyebrow {
+    display: none;
+  }
+  .vos-shell .tool-menu button {
+    flex: none;
+    min-height: 42px;
+    padding: 0 12px;
+  }
+  .vos-shell .tool-panel {
+    margin-top: 20px;
+    padding: 21px 18px;
+    border: 1px solid var(--vos-edge);
+  }
+  .focus-panel,
+  .focus-panel.modal-wide {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100dvh;
+    border-left: 0;
+    border-top: 3px solid var(--vos-identity);
+  }
+  .focus-panel .modal-header {
+    padding-top: calc(19px + env(safe-area-inset-top));
+  }
+  .focus-panel .modal-body {
+    padding-bottom: calc(36px + env(safe-area-inset-bottom));
+  }
+  .palette {
+    border-radius: 8px 8px 0 0;
+    border-bottom: 0;
+  }
+  .palette-heading small {
+    display: none;
+  }
+  .palette-search input,
+  .vos-shell .input,
+  .vos-shell .filter-search input {
+    font-size: 16px;
+  }
+}
+@media (max-width: 440px) {
+  .vos-home-meta {
+    gap: 10px;
+    font-size: 8px;
+  }
+  .vos-home-meta .demo-tag {
+    display: none;
+  }
+  .vos-now-primary h1 {
+    font-size: 50px;
+  }
+  .vos-next-action > a {
+    font-size: 18px;
+  }
+  .vos-metric-reading strong {
+    font-size: 46px;
+  }
+  .vos-finance-bottom {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 17px;
+  }
+  .vos-finance-bottom span:last-child {
+    grid-column: span 2;
+  }
+  .vos-section-lead {
+    align-items: start;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .vos-attention-row {
+    grid-template-columns: 22px minmax(0, 1fr) 16px;
+    gap: 9px;
+  }
+  .vos-attention-row .vos-signal {
+    display: none;
+  }
+  .vos-project-runway-row {
+    grid-template-columns: 22px minmax(0, 1fr) 60px 16px;
+    gap: 10px;
+  }
+  .vos-project-runway-row .vos-signal {
+    display: none;
+  }
+  .vos-runway-progress {
+    min-width: 60px;
+  }
+  .vos-shell .money-hero .vos-money-number strong {
+    font-size: 41px;
+  }
+  .vos-workspace-position {
+    display: none;
+  }
+  .vos-system-context {
+    max-width: 113px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .vos-local-state {
+    display: none;
+  }
+}
+@media (max-width: 360px) {
+  .vos-workspace {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .vos-now-primary h1 {
+    font-size: 43px;
+  }
+  .vos-metric-reading strong {
+    font-size: 39px;
+  }
+  .vos-now-finance {
+    padding-left: 17px;
+    padding-right: 17px;
+  }
+  .vos-shell .money-metrics .card {
+    padding-right: 11px;
+    padding-left: 11px;
+  }
+  .vos-shell .money-metrics .card:first-child,
+  .vos-shell .money-metrics .card:nth-child(3) {
+    padding-left: 0;
+  }
+  .vos-mobile-dock-index {
+    right: 2px;
+  }
+  .vos-mobile-dock-link {
+    font-size: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

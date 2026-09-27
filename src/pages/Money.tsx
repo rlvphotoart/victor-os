@@ -143,15 +143,42 @@ export function MoneyPage({ data }: { data: AppData }) {
   return (
     <div className="page-stack">
       <div className="money-hero">
-        <div>
-          <span className="eyebrow">TOTAL NET POSITION</span>
-          <strong>{fmt(summary.net)}</strong>
+        <div className="vos-money-hero-reading">
+          <span className="eyebrow">03 / FINANCIAL POSITION</span>
+          <div className="vos-money-number">
+            <strong>
+              {new Intl.NumberFormat("en-IE", {
+                maximumFractionDigits: 0,
+              }).format(summary.net)}
+            </strong>
+            <span>{currency}</span>
+          </div>
           <p>
-            Assets {fmt(summary.assets)} <span>·</span> Debt {fmt(summary.debt)}
+            <span>ASSETS</span> {fmt(summary.assets)} <i /> <span>DEBT</span>{" "}
+            {fmt(summary.debt)}
           </p>
         </div>
-        <div className="money-hero-icon">
-          <Wallet size={32} strokeWidth={1.3} />
+        <div className="vos-money-hero-axis">
+          <span>POSITION / LIVE</span>
+          <div aria-hidden="true">
+            {Array.from({ length: 16 }, (_, index) => (
+              <i
+                key={index}
+                className={
+                  index <
+                  Math.round(
+                    (Math.max(0, Math.min(100, summary.savingsRate)) / 100) *
+                      16,
+                  )
+                    ? "filled"
+                    : ""
+                }
+              />
+            ))}
+          </div>
+          <strong>
+            {Math.round(summary.savingsRate)}% <small>SAVINGS RATE</small>
+          </strong>
         </div>
       </div>
       <div className="money-metrics">
@@ -798,7 +825,11 @@ function MoneyForm({
     onClose();
   };
   return (
-    <Modal title={`${entity ? "Edit" : "Add"} ${kind}`} onClose={onClose}>
+    <Modal
+      title={`${entity ? "Edit" : "Add"} ${kind}`}
+      onClose={onClose}
+      mode="focus"
+    >
       <form className="form-stack" onSubmit={save}>
         {kind === "account" && (
           <>
