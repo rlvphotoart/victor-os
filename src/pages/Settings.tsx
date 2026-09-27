@@ -302,15 +302,54 @@ export function SettingsPage({ data }: { data: AppData }) {
         </Card>
         <Card className="chat-connection-card">
           <CardHeader
-            eyebrow="CHATGPT CONNECTION"
-            title="Update Victor OS by conversation"
-            subtitle="Tell ChatGPT what changed. It chooses the right category and writes directly to this live workspace."
+            eyebrow="CONVERSATIONAL UPDATES"
+            title="Update Victor OS with Codex"
+            subtitle="Describe a change in ordinary language. Codex chooses the right section and saves it to this live workspace."
           />
           <p className="helper-line">
             A completed payment becomes a transaction; a payment to make later
-            becomes a task. Context can become a note, and multi-step work can
-            become a project. ChatGPT asks for missing details instead of
-            inventing them.
+            becomes a task. Decisions can become notes, and multi-step work can
+            become a project. Codex asks for details that are needed to save an
+            accurate record.
+          </p>
+          <div className="chat-endpoint">
+            <code>Adaugă în Victor OS: verifică raportul luni.</code>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                void navigator.clipboard
+                  .writeText("Adaugă în Victor OS: verifică raportul luni.")
+                  .then(() => notify("Example copied"))
+                  .catch(() => notify("Could not copy the example", "error"));
+              }}
+            >
+              <Copy size={16} /> Copy example
+            </Button>
+          </div>
+          <ol className="chat-steps">
+            <li>Open Codex on the Mac with the Victor OS Update skill.</li>
+            <li>Ask Codex to add, edit, or complete something in Victor OS.</li>
+            <li>
+              Codex uses your signed-in Victor OS session and checks that the
+              result appears here. Changes sync across your devices.
+            </li>
+          </ol>
+          <p className="helper-line">
+            Keep your access key in your password manager. If sign-in expires,
+            enter it in Victor OS yourself, never in a conversation. No paid AI
+            API or code deployment is needed for data updates.
+          </p>
+        </Card>
+        <Card className="chat-connection-card">
+          <CardHeader
+            eyebrow="OPTIONAL CONNECTOR"
+            title="ChatGPT connection"
+            subtitle="Use this MCP connection if your ChatGPT account supports write tools and authorization completes."
+          />
+          <p className="helper-line">
+            Installing a plugin does not grant access on its own. Check the
+            active connections below before expecting a ChatGPT conversation to
+            save anything here.
           </p>
           <div className="chat-endpoint">
             <code>{window.location.origin + "/mcp"}</code>
@@ -355,7 +394,9 @@ export function SettingsPage({ data }: { data: AppData }) {
             {chatConnectionError && (
               <span className="form-error">{chatConnectionError}</span>
             )}
-            {chatConnections?.length === 0 && <span>None yet</span>}
+            {chatConnections?.length === 0 && (
+              <span>None yet. ChatGPT cannot read or write Victor OS.</span>
+            )}
             {chatConnections?.map((connection) => (
               <div key={connection.id} className="chat-connection-row">
                 <span>

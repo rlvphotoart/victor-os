@@ -44,9 +44,15 @@ The Worker expects an encrypted secret named ACCESS_KEY. Choose at least 32 **ra
 
 The public static files contain no personal records. The API refuses data access when ACCESS_KEY is missing or invalid. For local development only, a gitignored .dev.vars file may set DEV_OWNER; this bypass is restricted to localhost and must never be configured on the deployed Worker.
 
-## Update Victor OS from a ChatGPT conversation
+## Update Victor OS from a Codex conversation
 
-The Worker now serves a private MCP endpoint at `https://your-worker.example/mcp`. It gives ChatGPT focused tools to read limited workspace context and to create or update tasks, projects, and notes; record completed income/expenses; and save prompts. The model interprets the conversation and selects the tool. Each successful tool call writes directly to D1, so the change appears in the live app without a Git commit or code deployment.
+On this Mac, the personal `victor-os-update` Codex skill is installed at `~/.codex/skills/victor-os-update`. The source is also in [`codex/victor-os-update`](codex/victor-os-update). In a Codex conversation, say for example, “Adaugă în Victor OS: verifică raportul luni” or “Am plătit 40 EUR pentru transport astăzi; înregistrează în Victor OS.” Codex identifies the appropriate section, checks for an existing record, saves through the authenticated live app, and verifies the result. No application build, code deployment, or paid AI API is needed for a data change.
+
+The skill is local to the Codex installation. To use it on another computer, copy `codex/victor-os-update` to that computer's `~/.codex/skills/victor-os-update` and sign in to Victor OS there. Never paste the Victor OS access key into a conversation; enter it only in the Victor OS sign-in page if needed. A transaction records an expense or income; it does not automatically change an account balance.
+
+## Optional ChatGPT MCP connection
+
+The Worker serves a private MCP endpoint at `https://your-worker.example/mcp`. When a ChatGPT account supports the required write tools and authorization succeeds, it can read limited workspace context; create or update tasks, projects, notes, and prompts; and record completed income/expenses. Each successful tool call writes directly to D1, so the change appears in the live app without a Git commit or code deployment. A plugin showing as installed is not proof that it is connected: Settings must show an active ChatGPT connection.
 
 The connection uses OAuth 2.1 authorization code with PKCE. During setup, Victor OS asks for the existing access key **on the Victor OS domain**. ChatGPT receives a scoped, revocable token; it never receives the access key. Access tokens expire after one hour, refresh tokens rotate and expire after 30 days, and Settings shows connected sessions with a **Revoke** action. Rotating ACCESS_KEY also invalidates all connections. The OAuth state is stored separately from normal app records, so backups do not export connection tokens; resetting the database revokes every connection.
 
@@ -58,7 +64,7 @@ The connection uses OAuth 2.1 authorization code with PKCE. During setup, Victor
 4. When ChatGPT opens the Victor OS authorization page, check the domain and enter your access key there. Authorize the read/write connection.
 5. Return to Settings → ChatGPT connection in Victor OS to see or revoke the connection.
 
-The current setup follows the [official ChatGPT plugin quickstart](https://developers.openai.com/plugins/quickstart) and [OAuth guidance](https://developers.openai.com/plugins/build/auth). Availability of the Plugins and Work interface depends on the ChatGPT account and workspace. This is a personal connection; it does not require an OpenAI API key or paid model API calls from Victor OS. Conversation content is still processed by ChatGPT under the account's privacy settings.
+The setup follows the [official ChatGPT plugin quickstart](https://developers.openai.com/plugins/quickstart) and [OAuth guidance](https://developers.openai.com/plugins/build/auth). Availability of Plugins, authorization, and MCP write actions depends on the ChatGPT account, workspace, and browser. At the 2026-09-27 setup check, the personal plugin was installed but not authorized: Chrome blocked the form submission. Check Settings for the current connection state. Codex is the chosen conversational path. This is a personal connection; it does not require an OpenAI API key or paid model API calls from Victor OS. Conversation content is still processed by ChatGPT under the account's privacy settings.
 
 Examples:
 
