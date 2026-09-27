@@ -35,20 +35,7 @@ type Result = {
   action?: "new-note" | "theme" | "export";
   icon: typeof Home;
 };
-const recentKey = "victor-os-recent-commands";
-function loadRecent(): string[] {
-  try {
-    const value: unknown = JSON.parse(localStorage.getItem(recentKey) || "[]");
-    return Array.isArray(value)
-      ? value
-          .filter((item): item is string => typeof item === "string")
-          .slice(0, 5)
-      : [];
-  } catch {
-    return [];
-  }
-}
-
+const emptyRecent: string[] = [];
 export function CommandPalette({
   data,
   onClose,
@@ -60,7 +47,7 @@ export function CommandPalette({
   const notify = useToast();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
-  const [recent, setRecent] = useState(loadRecent);
+  const recent = data.settings[0]?.recentCommands ?? emptyRecent;
   const input = useRef<HTMLInputElement>(null);
   const palette = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -177,7 +164,7 @@ export function CommandPalette({
         key: "action-note",
         kind: "ACTION",
         title: "Create note",
-        subtitle: "Begin a local note",
+        subtitle: "Begin a cloud note",
         action: "new-note",
         icon: NotebookPen,
       },
@@ -302,12 +289,7 @@ export function CommandPalette({
       0,
       5,
     );
-    setRecent(next);
-    try {
-      localStorage.setItem(recentKey, JSON.stringify(next));
-    } catch {
-      /* private browsing fallback */
-    }
+    void repository.saveSettings({ recentCommands: next });
     try {
       if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
       else if (item.path) navigate(item.path);

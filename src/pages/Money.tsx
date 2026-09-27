@@ -646,7 +646,7 @@ export function MoneyPage({ data }: { data: AppData }) {
       {deleting && (
         <ConfirmDialog
           title="Delete this item?"
-          message="This entry will be permanently removed from local storage."
+          message="This entry will be permanently removed from your cloud workspace on every device."
           confirmLabel="Delete item"
           onClose={() => setDeleting(null)}
           onConfirm={() => deleteEntity(deleting.kind, deleting.id)}

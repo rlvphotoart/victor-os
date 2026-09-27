@@ -1,44 +1,11 @@
-import type { AppData } from "../types";
+import type { AppData, RecentContext } from "../types";
 import { TOOLS } from "../types";
 
-export type RecentContext = {
-  key: string;
-  label: string;
-  kind: "PROJECT" | "TASK" | "PROMPT" | "NOTE" | "TOOL";
-  path: string;
-  at: number;
-};
-
-const storageKey = "victor-os-meridian-recent";
-
-export function readRecentContexts(): RecentContext[] {
-  try {
-    const value: unknown = JSON.parse(localStorage.getItem(storageKey) || "[]");
-    if (!Array.isArray(value)) return [];
-    return value
-      .filter(
-        (item): item is RecentContext =>
-          typeof item === "object" &&
-          item !== null &&
-          typeof item.key === "string" &&
-          typeof item.label === "string" &&
-          typeof item.path === "string" &&
-          item.path.startsWith("/") &&
-          !item.path.startsWith("//") &&
-          typeof item.at === "number" &&
-          ["PROJECT", "TASK", "PROMPT", "NOTE", "TOOL"].includes(item.kind),
-      )
-      .slice(0, 6);
-  } catch {
-    return [];
-  }
-}
-
-export function rememberContext(
+export function contextFromLocation(
   pathname: string,
   search: string,
   data: AppData,
-) {
+): Omit<RecentContext, "at"> | null {
   const params = new URLSearchParams(search);
   const id = params.get("open");
   let item: Omit<RecentContext, "at"> | undefined;
@@ -88,14 +55,5 @@ export function rememberContext(
         path: `/toolbox?tool=${tool.id}`,
       };
   }
-  if (!item) return;
-  try {
-    const recent = readRecentContexts().filter((row) => row.key !== item.key);
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify([{ ...item, at: Date.now() }, ...recent].slice(0, 6)),
-    );
-  } catch {
-    /* Recent context is a convenience, never a dependency. */
-  }
+  return item ?? null;
 }

@@ -122,6 +122,14 @@ export interface QuickLink {
   demo?: boolean;
 }
 export type WidgetId = "daily" | "finance" | "projects" | "quickLinks";
+export interface RecentContext {
+  key: string;
+  label: string;
+  kind: "PROJECT" | "TASK" | "PROMPT" | "NOTE" | "TOOL";
+  path: string;
+  at: number;
+}
+
 export interface AppSettings {
   id: "app";
   name: string;
@@ -129,6 +137,9 @@ export interface AppSettings {
   currency: string;
   widgets: WidgetId[];
   initialized: boolean;
+  dockExpanded?: boolean;
+  recentContexts?: RecentContext[];
+  recentCommands?: string[];
 }
 
 export interface AppData {

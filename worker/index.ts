@@ -29,6 +29,9 @@ const defaultSettings: AppSettings = {
   currency: "EUR",
   widgets: ["daily", "finance", "projects", "quickLinks"],
   initialized: true,
+  dockExpanded: false,
+  recentContexts: [],
+  recentCommands: [],
 };
 
 const encoder = new TextEncoder();

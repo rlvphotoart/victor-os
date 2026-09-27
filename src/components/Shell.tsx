@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -22,7 +22,8 @@ import { format } from "date-fns";
 import type { AppData } from "../types";
 import { CommandPalette } from "./CommandPalette";
 import { classNames } from "../lib/utils";
-import { rememberContext } from "../lib/recent";
+import { contextFromLocation } from "../lib/recent";
+import { repository } from "../data/repository";
 
 const navigation = [
   { path: "/", label: "Home", icon: Home, index: "00" },
@@ -48,15 +49,6 @@ const descriptions: Record<string, string> = {
   "/more": "The rest of your workspace.",
 };
 
-const dockPreference = "victor-os-spine-expanded";
-function loadDockPreference() {
-  try {
-    return localStorage.getItem(dockPreference) === "true";
-  } catch {
-    return false;
-  }
-}
-
 export function Shell({
   data,
   children,
@@ -65,7 +57,8 @@ export function Shell({
   children: ReactNode;
 }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [expanded, setExpanded] = useState(loadDockPreference);
+  const expanded = data.settings[0]?.dockExpanded ?? false;
+  const lastRecentContext = useRef("");
   const [clock, setClock] = useState(() => new Date());
   const location = useLocation();
   const navigate = useNavigate();
@@ -114,20 +107,34 @@ export function Shell({
     document.title = `${current?.label ?? "More"} — Victor OS`;
     setPaletteOpen(false);
   }, [current?.label, location.pathname]);
-  useEffect(
-    () => rememberContext(location.pathname, location.search, data),
-    [location.pathname, location.search, data],
-  );
+  useEffect(() => {
+    const item = contextFromLocation(location.pathname, location.search, data);
+    if (!item) {
+      lastRecentContext.current = "";
+      return;
+    }
+    const marker = `${item.key}:${item.label}`;
+    if (lastRecentContext.current === marker) return;
+    lastRecentContext.current = marker;
+    const previous = data.settings[0]?.recentContexts ?? [];
+    if (previous[0]?.key === item.key && previous[0]?.label === item.label)
+      return;
+    void repository
+      .saveSettings({
+        recentContexts: [
+          { ...item, at: Date.now() },
+          ...previous.filter((row) => row.key !== item.key),
+        ].slice(0, 6),
+      })
+      .catch(() => {
+        if (lastRecentContext.current === marker)
+          lastRecentContext.current = "";
+      });
+  }, [location.pathname, location.search, data]);
 
-  const toggleExpanded = () =>
-    setExpanded((value) => {
-      try {
-        localStorage.setItem(dockPreference, String(!value));
-      } catch {
-        /* session only */
-      }
-      return !value;
-    });
+  const toggleExpanded = () => {
+    void repository.saveSettings({ dockExpanded: !expanded });
+  };
   const renderDockLink = (item: (typeof navigation)[number]) => (
     <NavLink
       key={item.path}

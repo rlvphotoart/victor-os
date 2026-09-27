@@ -28,11 +28,11 @@ The interface design rationale is in [DESIGN_LANGUAGE.md](DESIGN_LANGUAGE.md). A
 | PWA            | Vite PWA service worker and web manifest                    |
 | Backups        | Versioned JSON export/import                                |
 
-The UI calls only [src/data/repository.ts](src/data/repository.ts). It serializes writes, refreshes when the app regains focus and every minute while open, and rejects stale edits to the same record rather than silently overwriting them. [worker/index.ts](worker/index.ts) validates requests and writes to D1. [migrations/0001_records.sql](migrations/0001_records.sql) defines the database table. Records are partitioned by a single private workspace owner.
+Normal app data flows through [src/data/repository.ts](src/data/repository.ts), including appearance, dock layout, recent contexts, and command history. The repository serializes writes, refreshes when the app regains focus and every minute while open, and rejects stale edits to the same record rather than silently overwriting them. [worker/index.ts](worker/index.ts) validates requests and writes to D1. [migrations/0001_records.sql](migrations/0001_records.sql) defines the database table. Records are partitioned by a single private workspace owner.
 
 The first authenticated visit seeds clearly marked demo records. Settings can remove only those records, and a reset does not seed them again. If the workspace is empty later, Settings can load the examples again.
 
-The old IndexedDB adapter remains in [src/data/localRepository.ts](src/data/localRepository.ts) only to read data created by earlier local versions. Normal edits no longer write to IndexedDB. The PWA shell can be cached, but cloud data requires an internet connection. The service worker does not cache API responses.
+The deployed app does not use IndexedDB or localStorage for application data. The PWA shell can be cached, but cloud data requires an internet connection. The service worker does not cache API responses.
 
 ### Access key
 
@@ -85,7 +85,7 @@ IndexedDB belongs to a specific browser and URL origin. A new workers.dev URL ca
 4. Review the record counts and confirm RESTORE. This replaces the cloud workspace, so export any new cloud records first.
 5. Reload on another browser and verify the same records appear before deleting any old local copy.
 
-If an earlier IndexedDB database exists on the **same origin** as the new app, Settings also offers Review browser data for a direct, previewed import. The old copy is preserved as a safety net.
+The older browser data remains in its original browser until you choose to remove it. The new app cannot access it directly because browser storage is isolated by URL origin.
 
 ## Backup and recovery
 

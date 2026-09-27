@@ -4,7 +4,6 @@ import { ArrowRight, ArrowUpRight, Command, Plus } from "lucide-react";
 import type { AppData } from "../types";
 import { financeSummary } from "../lib/finance";
 import { dateLabel, money, safeUrl, today } from "../lib/utils";
-import { readRecentContexts } from "../lib/recent";
 import { linkIcon } from "../lib/linkIcon";
 import { Datum, Metric, StatusSignal } from "../components/OS";
 import { DemoTag } from "../components/ui";
@@ -65,7 +64,7 @@ export function DashboardPage({ data }: { data: AppData }) {
       kind: "PROJECT",
     })),
   ].slice(0, 4);
-  const recent = readRecentContexts().filter((item) => {
+  const recent = (data.settings[0]?.recentContexts ?? []).filter((item) => {
     const id = item.key.split("-").slice(1).join("-");
     if (item.kind === "PROJECT")
       return data.projects.some((row) => row.id === id);
@@ -257,7 +256,7 @@ export function DashboardPage({ data }: { data: AppData }) {
           />
           <div className="vos-section-lead">
             <strong>Pick up where you left off.</strong>
-            <span>LOCAL TRAIL</span>
+            <span>CLOUD TRAIL</span>
           </div>
           {recent.length ? (
             <div className="vos-recent-list">

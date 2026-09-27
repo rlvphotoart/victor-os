@@ -153,7 +153,7 @@ export function NotesPage({ data }: { data: AppData }) {
       {deleteId && (
         <ConfirmDialog
           title="Delete note?"
-          message="This note will be permanently removed from local storage."
+          message="This note will be permanently removed from your cloud workspace on every device."
           confirmLabel="Delete note"
           onClose={() => setDeleteId(null)}
           onConfirm={async () => {

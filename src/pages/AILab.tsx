@@ -666,7 +666,7 @@ function CostCalculator({ data }: { data: AppData }) {
       {deleting && (
         <ConfirmDialog
           title="Delete model?"
-          message="The model rate will be removed from your local calculator."
+          message="The model rate will be removed from your cloud workspace on every device."
           confirmLabel="Delete model"
           onClose={() => setDeleting(null)}
           onConfirm={async () => {

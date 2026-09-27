@@ -126,6 +126,15 @@ const link = z.object({
   order: amount,
   ...demo,
 });
+const recentContext = z.object({
+  key: text,
+  label: text,
+  kind: z.enum(["PROJECT", "TASK", "PROMPT", "NOTE", "TOOL"]),
+  path: text.refine(
+    (value) => value.startsWith("/") && !value.startsWith("//"),
+  ),
+  at: z.number().finite(),
+});
 const settings = z.object({
   id: z.literal("app"),
   name: text,
@@ -133,6 +142,9 @@ const settings = z.object({
   currency: text,
   widgets: z.array(z.enum(["daily", "finance", "projects", "quickLinks"])),
   initialized: z.boolean(),
+  dockExpanded: z.boolean().optional(),
+  recentContexts: z.array(recentContext).max(6).optional(),
+  recentCommands: z.array(text).max(5).optional(),
 });
 
 export const recordSchemas = {

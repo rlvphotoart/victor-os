@@ -420,6 +420,9 @@ export function makeDemoData(): AppData {
         currency: "EUR",
         widgets: ["daily", "finance", "projects", "quickLinks"],
         initialized: true,
+        dockExpanded: false,
+        recentContexts: [],
+        recentCommands: [],
       },
     ],
   };

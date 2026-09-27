@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Check,
   Cloud,
   Download,
   FileJson,
-  HardDrive,
   LogOut,
   Moon,
   RotateCcw,
@@ -23,7 +22,6 @@ import {
   type BackupFile,
 } from "../data/backup";
 import { repository } from "../data/repository";
-import { legacyRepository } from "../data/localRepository";
 import { makeDemoData } from "../data/demo";
 import { downloadText, today } from "../lib/utils";
 import {
@@ -65,10 +63,6 @@ export function SettingsPage({ data }: { data: AppData }) {
   const settings = data.settings[0];
   const [name, setName] = useState(settings?.name ?? "Victor");
   const [preview, setPreview] = useState<BackupFile | null>(null);
-  const [legacyData, setLegacyData] = useState<AppData | null>(null);
-  const [previewSource, setPreviewSource] = useState<"file" | "browser">(
-    "file",
-  );
   const [importError, setImportError] = useState("");
   const [confirm, setConfirm] = useState<
     "import" | "reset" | "demo" | "seed" | null
@@ -88,18 +82,6 @@ export function SettingsPage({ data }: { data: AppData }) {
     (sum, value) => sum + value,
     0,
   );
-  useEffect(() => {
-    void legacyRepository
-      .snapshot()
-      .then((local) => {
-        const count = Object.values(backupCounts(local)).reduce(
-          (sum, value) => sum + value,
-          0,
-        );
-        if (local.settings.length && count) setLegacyData(local);
-      })
-      .catch(() => undefined);
-  }, []);
   const exportAll = () => {
     downloadText(
       `victor-os-backup-${today()}.json`,
@@ -117,7 +99,6 @@ export function SettingsPage({ data }: { data: AppData }) {
     }
     try {
       setPreview(parseBackup(await file.text()));
-      setPreviewSource("file");
     } catch (issue) {
       setImportError(
         issue instanceof Error ? issue.message : "Unable to read this backup.",
@@ -221,35 +202,6 @@ export function SettingsPage({ data }: { data: AppData }) {
             title="Backup & restore"
             subtitle="Your live data is stored in Cloudflare D1. Export a separate copy you control."
           />
-          {legacyData && (
-            <div className="import-preview">
-              <div className="import-preview-head">
-                <HardDrive size={20} />
-                <div>
-                  <strong>Data found in this browser</strong>
-                  <small>
-                    The previous local version has{" "}
-                    {Object.values(backupCounts(legacyData)).reduce(
-                      (sum, count) => sum + count,
-                      0,
-                    )}{" "}
-                    records. Review them before moving them to the cloud.
-                  </small>
-                </div>
-                <Badge tone="amber">LOCAL COPY</Badge>
-              </div>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setPreview(makeBackup(legacyData));
-                  setPreviewSource("browser");
-                  setImportError("");
-                }}
-              >
-                Review browser data
-              </Button>
-            </div>
-          )}
           <div className="backup-actions">
             <Button onClick={exportAll}>
               <Download size={17} /> Export all data
@@ -414,11 +366,7 @@ export function SettingsPage({ data }: { data: AppData }) {
             await repository.replaceAll(preview.data);
             setPreview(null);
             setName(preview.data.settings[0].name);
-            notify(
-              previewSource === "browser"
-                ? "Browser data moved to cloud"
-                : "Cloud backup restored",
-            );
+            notify("Cloud backup restored");
           }}
         />
       )}
