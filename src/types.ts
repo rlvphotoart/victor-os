@@ -97,9 +97,9 @@ export interface SheetBudget {
       instrument: string;
       symbol: string;
       currency: string;
-      invested: number;
-      current: number;
-      fxRon: number;
+      invested: number | null;
+      current: number | null;
+      fxRon: number | null;
       updatedAt: string | null;
     }[];
   };

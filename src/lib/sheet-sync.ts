@@ -41,12 +41,13 @@ function victorXtb(spreadsheet) {
     const instrument = String(row[0]).trim();
     const symbol = String(row[1]).trim();
     const currency = String(row[2]).trim().toUpperCase();
-    if (!instrument || !currency) throw new Error('Complete the instrument and currency in XTB row ' + line + '.');
+    if (!instrument) throw new Error('Complete the instrument in XTB row ' + line + '.');
+    const invested = row[3] === '' ? null : victorRequiredNumber(row[3], 'XTB D' + line, false);
+    const current = row[4] === '' ? null : victorRequiredNumber(row[4], 'XTB E' + line, false);
+    const fxRon = row[5] === '' ? null : victorRequiredNumber(row[5], 'XTB F' + line, true);
     return [{
       instrument, symbol, currency,
-      invested: victorRequiredNumber(row[3], 'XTB D' + line, false),
-      current: victorRequiredNumber(row[4], 'XTB E' + line, false),
-      fxRon: victorRequiredNumber(row[5], 'XTB F' + line, true),
+      invested, current, fxRon,
       updatedAt: dates[index][0] || null,
     }];
   });

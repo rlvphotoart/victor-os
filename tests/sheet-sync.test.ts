@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import worker from "../worker/index";
 import { appsScriptForBudget } from "../src/lib/sheet-sync";
+import { sheetMoneySummary } from "../src/lib/sheet-finance";
+import type { SheetBudget } from "../src/types";
 
 const url = "https://victor-os.example/api/sheet-sync/push";
 const sheetId = "YOUR_GOOGLE_SHEET_ID";
@@ -85,6 +87,19 @@ describe("Google Sheet sync", () => {
     expect(((await response.json()) as { ok: boolean }).ok).toBe(true);
     expect(run).toHaveBeenCalledOnce();
     expect(prepare.mock.calls[1][0]).toContain("'sheetBudgets'");
+  });
+
+  it("keeps identified XTB instruments without inventing a portfolio value", async () => {
+    const run = vi.fn(async () => ({ meta: { changes: 1 } }));
+    const first = vi.fn(async () => ({ payload: JSON.stringify({ hash: await hash(key) }) }));
+    const prepare = vi.fn((sql: string) => ({
+      bind: vi.fn(() => (sql.startsWith("SELECT") ? { first } : { run })),
+    }));
+    const env = { DB: { prepare }, ACCESS_KEY: "x".repeat(32) } as unknown as Parameters<typeof worker.fetch>[1];
+    const partial = { ...input.xtb, positions: [{ instrument: "Synthetic ETF A", symbol: "SYNTH_A", currency: "", invested: null, current: null, fxRon: null, updatedAt: null }] };
+    const response = await worker.fetch(request({ ...input, xtb: partial }), env);
+    expect(response.status, await response.clone().text()).toBe(200);
+    expect(sheetMoneySummary({ ...input, id: "google-budget", xtb: partial, syncedAt: new Date().toISOString() } as SheetBudget)?.xtbValue).toBeNull();
   });
 
   it("rejects invalid values without overwriting the last good snapshot", async () => {

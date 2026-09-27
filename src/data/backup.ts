@@ -118,10 +118,10 @@ const sheetBudget = z.object({
           z.object({
             instrument: z.string().min(1).max(120),
             symbol: z.string().max(40),
-            currency: z.string().min(1).max(10),
-            invested: z.number().finite().nonnegative(),
-            current: z.number().finite().nonnegative(),
-            fxRon: z.number().finite().positive(),
+            currency: z.string().max(10),
+            invested: z.number().finite().nonnegative().nullable(),
+            current: z.number().finite().nonnegative().nullable(),
+            fxRon: z.number().finite().positive().nullable(),
             updatedAt: z.string().max(40).nullable(),
           }),
         )

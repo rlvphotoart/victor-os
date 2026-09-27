@@ -301,37 +301,37 @@ export function MoneyPage({ data }: { data: AppData }) {
             <div>
               <span>Capital investit</span>
               <strong>
-                {sheet.xtb?.positions.length ? ron(summary.invested) : "—"}
+                {summary.invested === null ? "—" : ron(summary.invested)}
               </strong>
             </div>
             <div>
               <span>Rezultat nerealizat</span>
               <strong>
-                {sheet.xtb?.positions.length ? ron(summary.unrealized) : "—"}
+                {summary.unrealized === null ? "—" : ron(summary.unrealized)}
               </strong>
             </div>
           </div>
           {sheet.xtb?.positions.length ? (
             <div className="data-list">
               {sheet.xtb.positions.map((position, index) => {
-                const current = position.current * position.fxRon;
-                const gain =
-                  (position.current - position.invested) * position.fxRon;
+                const current = position.current !== null && position.fxRon !== null
+                  ? position.current * position.fxRon : null;
+                const gain = position.current !== null && position.invested !== null && position.fxRon !== null
+                  ? (position.current - position.invested) * position.fxRon : null;
                 return (
                   <div className="data-row" key={`${position.symbol}-${index}`}>
                     <div className="data-primary">
                       <strong>{position.instrument}</strong>
                       <small>
-                        {position.symbol || "Fără simbol"} · {position.currency}{" "}
-                        · curs {position.fxRon.toLocaleString("ro-RO")}
+                        {position.symbol || "Fără simbol"} · {position.currency || "Monedă de completat"}{" "}
+                        {position.fxRon !== null ? `· curs ${position.fxRon.toLocaleString("ro-RO")}` : "· curs de completat"}
                         {position.updatedAt ? ` · ${position.updatedAt}` : ""}
                       </small>
                     </div>
                     <div className="data-amount">
-                      <strong>{ron(current)}</strong>
+                      <strong>{current === null ? "Valoare de completat" : ron(current)}</strong>
                       <small>
-                        {gain >= 0 ? "+" : ""}
-                        {ron(gain)} rezultat nerealizat
+                        {gain === null ? "Datele poziției sunt incomplete" : `${gain >= 0 ? "+" : ""}${ron(gain)} rezultat nerealizat`}
                       </small>
                     </div>
                   </div>
