@@ -85,7 +85,7 @@ The spreadsheet `your budget workbook`, tab `Buget lunar` (`gid=1676910216`), ca
 1. Deploy this version of Victor OS and sign in.
 2. In Settings → Sync your monthly budget, click **Connect Google Sheet**. This creates a random write-only sync key; the Worker stores only its SHA-256 hash.
 3. In the linked Google Sheet, open Extensions → Apps Script. The existing `Cod.gs` saves monthly history, so keep it. Click **Copy setup code** in Victor OS, append the copied functions after the existing code, and save.
-4. In Apps Script → Project Settings → Script properties, add a property named `VICTOR_SYNC_KEY`. Click **Copy sync key** in Victor OS and paste its value into that property. The key is not placed in source code or shown on the Victor OS page.
+4. In Apps Script → Project Settings → Script properties, add a property named `VICTOR_SYNC_KEY`. Click **Copy sync key** in Victor OS and paste its value into that property. If browser clipboard copying fails, click **Reveal sync key**, select the field, and copy it manually. Hide it afterward. The key is never placed in source code and is only shown on the Victor OS page when you explicitly reveal it.
 5. Select `setupVictorSync` and click Run. Complete Google's authorization in your own browser. The function installs an edit trigger and a five-minute time trigger, then sends the current values immediately.
 6. Refresh Money. The last update time and synced values should appear. Subsequent direct cell edits trigger sync; formula recalculations and script/API changes are picked up by the timer within roughly five minutes.
 

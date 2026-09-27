@@ -94,6 +94,7 @@ export function SettingsPage({ data }: { data: AppData }) {
   const [revokingChat, setRevokingChat] = useState<string | null>(null);
   const [sheetPaired, setSheetPaired] = useState(false);
   const [sheetKey, setSheetKey] = useState("");
+  const [showSheetKey, setShowSheetKey] = useState(false);
   const [sheetBusy, setSheetBusy] = useState(false);
   const [confirm, setConfirm] = useState<
     "import" | "reset" | "demo" | "seed" | "money" | null
@@ -515,6 +516,7 @@ export function SettingsPage({ data }: { data: AppData }) {
                     throw new Error("Could not create sheet connection.");
                   const result = (await response.json()) as { key: string };
                   setSheetKey(result.key);
+                  setShowSheetKey(false);
                   setSheetPaired(true);
                   notify(
                     "Connection prepared. Install the script in the spreadsheet.",
@@ -553,6 +555,7 @@ export function SettingsPage({ data }: { data: AppData }) {
                       throw new Error("Could not disconnect the sheet.");
                     setSheetPaired(false);
                     setSheetKey("");
+                    setShowSheetKey(false);
                     notify(
                       "Sheet connection revoked. Existing snapshot remains visible until Money is cleared.",
                     );
@@ -623,6 +626,29 @@ export function SettingsPage({ data }: { data: AppData }) {
               >
                 <Copy size={16} /> Copy sync key
               </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setShowSheetKey((visible) => !visible)}
+              >
+                {showSheetKey ? "Hide sync key" : "Reveal sync key"}
+              </Button>
+              {showSheetKey && (
+                <div className="sheet-key-manual-copy">
+                  <Input
+                    aria-label="Sync key for manual copy"
+                    autoComplete="off"
+                    readOnly
+                    spellCheck={false}
+                    value={sheetKey}
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                  <p className="helper-line">
+                    Click the field to select the key, press Cmd/Ctrl+C, then
+                    paste it into the Apps Script property Value. Hide the key
+                    when finished.
+                  </p>
+                </div>
+              )}
               <p className="helper-line">
                 The key can update only the linked Money snapshot. Keep the Apps
                 Script project private. Generating new setup code revokes the
