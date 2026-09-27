@@ -7,7 +7,7 @@ A private personal command center for projects, tasks, finances, prompts, notes,
 - Home dashboard with priorities, financial position, projects, and quick access to playbooks.
 - Tasks with Today and board views, filters, sorting, drag and drop, and editing.
 - Projects with status, priority, progress, notes, next action, and links.
-- Money with manual accounts, debts, investments, transactions, budgets, goals, and monthly charts, plus a separate Google Sheets budget snapshot in RON. There is no bank connection.
+- Money sourced from the connected Google Sheet, including salary, budget, saved monthly history, and a manually reported XTB account snapshot. There is no bank or broker connection.
 - AI Lab with 22 reusable prompts, search, favorites, duplication, version history, and an editable model cost calculator.
 - Model cost reference with researched, dated source links, provider filters, and explicit unpriced entries for Paperclip and Hermès. Estimates use standard direct API text-token rates in USD and exclude caching, long context, tools, tax, and subscription billing.
 - Playbooks with reusable checklists for weekly planning, release readiness, validation evidence, defect triage, and AI pilots.
@@ -78,7 +78,7 @@ For finance, the connector only records completed transactions. It never moves m
 
 ## Sync the monthly Google Sheet
 
-Money and the Home finance card use only the Google Sheet `your budget workbook` as their source. The `Buget lunar` tab (`gid=1676910216`) supplies B2 (planned salary), B3 (month), A5:C9 (budget and actual spending), B12:B13 (emergency fund), and optional B15 (end-of-month debt balance). `Istoric 12 luni` supplies saved monthly comparisons. `Investiții XTB` (`gid=1372025324`) contains manually entered positions, their invested/current values in the instrument currency, and a manually entered RON exchange rate. Its formulas calculate invested value, current value, and unrealized result in RON. Blank XTB fields stay blank in Money; no balance or price is invented. Legacy manual Money records remain in backup storage but are not shown or included in financial totals.
+Money and the Home finance card use only the Google Sheet `your budget workbook` as their source. The `Buget lunar` tab (`gid=1676910216`) supplies B2 (planned salary), B3 (month), A5:C9 (budget and actual spending), B12:B13 (emergency fund), and optional B15 (end-of-month debt balance). `Istoric 12 luni` supplies saved monthly comparisons. `Investiții XTB` (`gid=1372025324`) holds manually reported account values in D2:D6 and F2, and positions in A8:J107. The reported account total is displayed separately from the sum of positions and from pending orders/withdrawals. G:I calculate position values and unrealized results only when their inputs exist; pending operations never count as completed trades or available cash. Blank XTB fields stay blank in Money. Legacy manual Money records remain in backup storage but are not shown or included in financial totals.
 
 1. Deploy this version of Victor OS and sign in.
 2. In Settings → Sync your monthly budget, click **Connect Google Sheet**. This creates a random write-only sync key; the Worker stores only its SHA-256 hash.

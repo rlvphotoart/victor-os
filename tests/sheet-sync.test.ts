@@ -102,6 +102,32 @@ describe("Google Sheet sync", () => {
     expect(sheetMoneySummary({ ...input, id: "google-budget", xtb: partial, syncedAt: new Date().toISOString() } as SheetBudget)?.xtbValue).toBeNull();
   });
 
+  it("keeps the XTB account total separate from positions and pending orders", async () => {
+    const run = vi.fn(async () => ({ meta: { changes: 1 } }));
+    const first = vi.fn(async () => ({ payload: JSON.stringify({ hash: await hash(key) }) }));
+    const prepare = vi.fn((sql: string) => ({ bind: vi.fn(() => sql.startsWith("SELECT") ? { first } : { run }) }));
+    const env = { DB: { prepare }, ACCESS_KEY: "x".repeat(32) } as unknown as Parameters<typeof worker.fetch>[1];
+    const xtb = {
+      asOf: "27.09.2026",
+      cashRon: null,
+      reported: { budgetRon: 20000, totalRon: 17000, fundRon: 12000, pendingWithdrawalRon: 7000, pendingBuyRon: 1400, pendingSellRon: 2800 },
+      positions: [
+        { instrument: "Synthetic ETF A", symbol: "SYNTH_A", currency: "RON", invested: null, current: 1100, fxRon: 1, updatedAt: null },
+        { instrument: "Synthetic ETF B", symbol: "SYNTH_B", currency: "RON", invested: null, current: 2200, fxRon: 1, updatedAt: null },
+        { instrument: "Synthetic ETF C", symbol: "SYNTH_C", currency: "RON", invested: null, current: 3300, fxRon: 1, updatedAt: null },
+      ],
+    };
+    const response = await worker.fetch(request({ ...input, xtb }), env);
+    expect(response.status, await response.clone().text()).toBe(200);
+    const summary = sheetMoneySummary({ ...input, id: "google-budget", xtb, syncedAt: new Date().toISOString() } as SheetBudget);
+    expect(summary?.xtbValue).toBe(17000);
+    expect(summary?.positionValue).toBeCloseTo(6600, 2);
+    expect(summary?.fundGap).toBeCloseTo(5400, 2);
+    expect(summary?.accountGap).toBeCloseTo(-2000, 2);
+    expect(summary?.invested).toBeNull();
+    expect(summary?.unrealized).toBeNull();
+  });
+
   it("rejects invalid values without overwriting the last good snapshot", async () => {
     const run = vi.fn();
     const first = vi.fn(async () => ({

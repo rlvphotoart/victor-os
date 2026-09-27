@@ -52,9 +52,20 @@ function victorXtb(spreadsheet) {
     }];
   });
   const cash = sheet.getRange('B3').getValue();
+  const reported = {
+    budgetRon: sheet.getRange('D2').getValue(),
+    totalRon: sheet.getRange('D3').getValue(),
+    fundRon: sheet.getRange('D4').getValue(),
+    pendingWithdrawalRon: sheet.getRange('D5').getValue(),
+    pendingBuyRon: sheet.getRange('D6').getValue(),
+    pendingSellRon: sheet.getRange('F2').getValue(),
+  };
+  for (const [name, value] of Object.entries(reported))
+    reported[name] = value === '' ? null : victorRequiredNumber(value, 'XTB ' + name, false);
   return {
     asOf: sheet.getRange('B2').getDisplayValue() || null,
     cashRon: cash === '' ? null : victorNumber(cash, 'XTB B3'),
+    reported,
     positions,
   };
 }

@@ -18,15 +18,25 @@ export function sheetMoneySummary(sheet: SheetBudget | undefined) {
   );
   const allValued = valuedPositions.length === (sheet.xtb?.positions.length ?? 0);
   const allInvested = investedPositions.length === (sheet.xtb?.positions.length ?? 0);
-  const xtbValue =
+  const positionValue = allValued && valuedPositions.length ? holdings : null;
+  const computedValue =
     sheet.xtb && allValued && (sheet.xtb.cashRon !== null || valuedPositions.length)
       ? holdings + (sheet.xtb.cashRon ?? 0)
       : null;
+  const reported = sheet.xtb?.reported;
+  const xtbValue = reported?.totalRon ?? computedValue;
+  const fundGap = reported?.fundRon != null && positionValue !== null
+    ? reported.fundRon - positionValue : null;
+  const accountGap = reported?.totalRon != null && reported.fundRon != null && reported.pendingWithdrawalRon != null
+    ? reported.totalRon - reported.fundRon - reported.pendingWithdrawalRon : null;
   return {
     spent,
     planned,
     remaining: sheet.salary - spent,
     xtbValue,
+    positionValue,
+    fundGap,
+    accountGap,
     invested: allInvested && investedPositions.length ? invested : null,
     unrealized: allValued && allInvested && valuedPositions.length ? holdings - invested : null,
     spentPercent:

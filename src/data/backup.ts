@@ -113,6 +113,16 @@ const sheetBudget = z.object({
     .object({
       asOf: z.string().max(40).nullable(),
       cashRon: z.number().finite().nonnegative().nullable(),
+      reported: z
+        .object({
+          budgetRon: z.number().finite().nonnegative().nullable(),
+          totalRon: z.number().finite().nonnegative().nullable(),
+          fundRon: z.number().finite().nonnegative().nullable(),
+          pendingWithdrawalRon: z.number().finite().nonnegative().nullable(),
+          pendingBuyRon: z.number().finite().nonnegative().nullable(),
+          pendingSellRon: z.number().finite().nonnegative().nullable(),
+        })
+        .optional(),
       positions: z
         .array(
           z.object({

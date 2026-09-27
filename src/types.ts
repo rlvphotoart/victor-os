@@ -93,6 +93,14 @@ export interface SheetBudget {
   xtb?: {
     asOf: string | null;
     cashRon: number | null;
+    reported?: {
+      budgetRon: number | null;
+      totalRon: number | null;
+      fundRon: number | null;
+      pendingWithdrawalRon: number | null;
+      pendingBuyRon: number | null;
+      pendingSellRon: number | null;
+    };
     positions: {
       instrument: string;
       symbol: string;

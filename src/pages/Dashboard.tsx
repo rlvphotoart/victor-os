@@ -190,7 +190,7 @@ export function DashboardPage({ data }: { data: AppData }) {
                 </strong>
               </span>
               <span>
-                <small>XTB</small>
+                <small>{sheet?.xtb?.reported?.totalRon != null ? "XTB COMUNICAT" : "XTB"}</small>
                 <strong>
                   {summary?.xtbValue == null
                     ? "—"
