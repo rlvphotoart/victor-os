@@ -4,6 +4,28 @@ Public source for a personal command center developed on **27 September 2026**. 
 
 A private personal command center for projects, tasks, finances, prompts, notes, playbooks, and browser utilities. The interface is a React progressive web app. Data is stored in Cloudflare D1 and is available in every browser after signing in with the same access key.
 
+## Interface walkthrough
+
+These genuine application screenshots were captured on **4 October 2026** from an isolated local demonstration workspace. Example records are marked **DEMO**. The local database is separate from the owner's operational workspace; no production data or credentials are shown. The Home finance panel is unpaired and displays blank values.
+
+### Home and priorities
+
+The dashboard brings the next action, items needing attention, project progress and recent contexts into one view.
+
+![Victor OS Home dashboard with marked demonstration records](docs/screenshots/victor-home-demo.jpg)
+
+### Task board
+
+Tasks move through Inbox, Next, In Progress, Waiting and Done. The board displays project, priority and due-date context, with search and filters above it.
+
+![Victor OS task board showing marked example tasks across five workflow states](docs/screenshots/victor-task-board-demo.jpg)
+
+### AI Lab prompt library
+
+The prompt register groups reusable instructions with search, tool and category filters, favourites, copy controls and revision metadata.
+
+![Victor OS AI Lab displaying marked demonstration prompts and library controls](docs/screenshots/victor-ai-lab-demo.jpg)
+
 ## What is included
 
 - Home dashboard with priorities, financial position, projects, and quick access to playbooks.
