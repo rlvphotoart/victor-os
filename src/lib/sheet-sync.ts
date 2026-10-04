@@ -1,4 +1,5 @@
-export const BUDGET_SHEET_ID = "YOUR_GOOGLE_SHEET_ID";
+import { BUDGET_SHEET_ID } from "./sheet-config";
+export { BUDGET_SHEET_ID } from "./sheet-config";
 export const BUDGET_SHEET_URL = `https://docs.google.com/spreadsheets/d/${BUDGET_SHEET_ID}/edit?gid=1676910216`;
 
 export function appsScriptForBudget(origin: string) {

@@ -1,5 +1,7 @@
 # Victor OS
 
+Public source for a personal command center developed on **27 September 2026**. The owner's live workspace and original operational repository remain private. This publication preserves the development history with personal finance fixtures and infrastructure identifiers replaced by synthetic examples or placeholders. It is not connected to the owner's Cloudflare deployment.
+
 A private personal command center for projects, tasks, finances, prompts, notes, playbooks, and browser utilities. The interface is a React progressive web app. Data is stored in Cloudflare D1 and is available in every browser after signing in with the same access key.
 
 ## What is included
@@ -15,7 +17,7 @@ A private personal command center for projects, tasks, finances, prompts, notes,
 - Browser-only utilities for JSON, Base64, URL encoding, timestamps, UUIDs, text diff, regex, counting, token estimates, and requirement/test ID reconciliation.
 - Global command palette, responsive mobile navigation, dark/light theme, and installable PWA.
 - Complete JSON backup and restore, demo-data removal, and a strongly confirmed reset.
-- A private ChatGPT MCP connection that classifies conversational updates and writes supported records directly to D1.
+- Optional MCP/OAuth implementation for conversational updates to supported D1 records. It requires a successful authorization; the original setup attempt was blocked, so an active live ChatGPT connection is not claimed.
 
 The interface design rationale is in [DESIGN_LANGUAGE.md](DESIGN_LANGUAGE.md). All fonts are self-hosted. No analytics, ad trackers, paid AI APIs, or bank APIs are used.
 
@@ -78,6 +80,8 @@ For finance, the connector only records completed transactions. It never moves m
 
 ## Sync the monthly Google Sheet
 
+Before deployment, replace `YOUR_GOOGLE_SHEET_ID` in [src/lib/sheet-config.ts](src/lib/sheet-config.ts) with the ID of a spreadsheet you own. The same value is used by the UI, Worker, import validation and bound Apps Script. Keep the spreadsheet's General access **Restricted**; knowing its ID must not grant access. Adapt the documented worksheet layout to your own sheet. The tests use synthetic figures.
+
 Money and the Home finance card use only the Google Sheet `your budget workbook` as their source. The `Buget lunar` tab (`gid=1676910216`) supplies B2 (planned salary), B3 (month), A5:C9 (budget and actual spending), B12:B13 (emergency fund), and optional B15 (end-of-month debt balance). `Istoric 12 luni` supplies saved monthly comparisons. `Investiții XTB` (`gid=1372025324`) holds manually reported account values in D2:D6 and F2, and positions in A8:J107. The reported account total is displayed separately from the sum of positions and from pending orders/withdrawals. G:I calculate position values and unrealized results only when their inputs exist; pending operations never count as completed trades or available cash. Blank XTB fields stay blank in Money. Legacy manual Money records remain in backup storage but are not shown or included in financial totals.
 
 1. Deploy this version of Victor OS and sign in.
@@ -87,7 +91,7 @@ Money and the Home finance card use only the Google Sheet `your budget workbook`
 5. Select `setupVictorSync` and click Run. Complete Google's authorization in your own browser. The function installs an edit trigger and a five-minute time trigger, then sends the current values immediately.
 6. Refresh Money. The last update time and synced values should appear. Subsequent direct edits in `Buget lunar` or `Investiții XTB` trigger sync; formula recalculations and script/API changes are picked up by the timer within roughly five minutes. Edits to XTB data must be made in the Sheet. This is a manual portfolio tracker, with no XTB login, orders, live market data, or paid feed.
 
-Keep the Apps Script project private; its Script properties contain the sync key. **Disconnect** revokes the key. **Generate new setup code** rotates it and requires replacing the `VICTOR_SYNC_KEY` Script property and rerunning `setupVictorSync`. **Clear Money** removes the snapshot and revokes the key. JSON backup includes the snapshot, but never the sync key. Restoring a backup does not restore a live connection; pair again afterward. Sync does not require making the sheet public or using a paid service. At implementation time, this sheet allowed anyone with its link to view it; change Google Sheets → Share → General access to Restricted if that access is unintended. Google's [installable triggers](https://developers.google.com/apps-script/guides/triggers/installable) and [Apps Script quotas](https://developers.google.com/apps-script/guides/services/quotas) apply.
+Keep the Apps Script project private; its Script properties contain the sync key. **Disconnect** revokes the key. **Generate new setup code** rotates it and requires replacing the `VICTOR_SYNC_KEY` Script property and rerunning `setupVictorSync`. **Clear Money** removes the snapshot and revokes the key. JSON backup includes the snapshot, but never the sync key. Restoring a backup does not restore a live connection; pair again afterward. Sync does not require making the sheet public or using a paid service. Use Google Sheets → Share → General access → Restricted for your own spreadsheet. Google's [installable triggers](https://developers.google.com/apps-script/guides/triggers/installable) and [Apps Script quotas](https://developers.google.com/apps-script/guides/services/quotas) apply.
 
 ## Run locally
 
@@ -111,13 +115,13 @@ Run release checks:
 
 ## Deploy on Cloudflare for €0/month
 
-The repository is connected to the existing Cloudflare Worker named victor-os. Its Git integration uses the main branch, build command npm run build, and deploy command npx wrangler deploy. Pushing main triggers deployment. [wrangler.jsonc](wrangler.jsonc) configures static assets, the SPA fallback, API routing, and D1 binding.
+This public repository is not connected to the owner's production Worker. Create your own Cloudflare Worker and D1 database. You can deploy from the CLI or configure your own Git integration with build command `npm run build` and deploy command `npx wrangler deploy`. [wrangler.jsonc](wrangler.jsonc) configures static assets, the SPA fallback, API routing, and D1 binding.
 
-One-time setup for this account:
+One-time setup for your account:
 
-1. In Cloudflare D1, use the existing victor-os-data database. It was created with the EU jurisdiction. The committed Wrangler file contains its database ID. The records table and index have been created. For a new database or another account, create a D1 database, update its ID in wrangler.jsonc, then apply migrations with npx wrangler d1 migrations apply DB --remote.
+1. In Cloudflare D1, create your own database (optionally in the EU jurisdiction). Replace the all-zero `database_id` placeholder in `wrangler.jsonc` with its ID, then apply migrations with `npx wrangler d1 migrations apply DB --remote`. Configure your spreadsheet in `src/lib/sheet-config.ts`.
 2. In Cloudflare Workers & Pages → victor-os → Settings → Variables and secrets, add ACCESS_KEY as an **encrypted secret** for Production. Use a random value of at least 32 characters from your password manager. Keep a copy in that password manager. Never add it as a plain-text variable or commit it.
-3. Push main (or allow the existing Git integration to deploy it). The wrangler.jsonc setting enables the production workers.dev route. Open the assigned HTTPS URL and enter the same access key.
+3. Run `npx wrangler deploy` (or allow your own Git integration to deploy it). The wrangler.jsonc setting enables the production workers.dev route. Open the assigned HTTPS URL and enter the same access key.
 4. Open that URL on iPhone, MacBook, and Windows. Each browser signs in once per session; all records then come from the same D1 database.
 
 Cloudflare Zero Trust Access was not used: its activation flow in this account requested a payment method and authorization for overage charges. The private Worker key avoids that requirement.

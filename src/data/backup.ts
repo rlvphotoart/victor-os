@@ -1,3 +1,4 @@
+import { BUDGET_SHEET_ID } from "../lib/sheet-config";
 import { z } from "zod";
 import type { AppData } from "../types";
 
@@ -82,7 +83,7 @@ const goal = z.object({
 });
 const sheetBudget = z.object({
   id: z.literal("google-budget"),
-  sheetId: z.literal("YOUR_GOOGLE_SHEET_ID"),
+  sheetId: z.literal(BUDGET_SHEET_ID),
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
   salary: z.number().finite().nonnegative(),
   categories: z

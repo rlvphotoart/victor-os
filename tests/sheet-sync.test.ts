@@ -1,3 +1,4 @@
+import { BUDGET_SHEET_ID } from "../src/lib/sheet-config";
 import { describe, expect, it, vi } from "vitest";
 import worker from "../worker/index";
 import { appsScriptForBudget } from "../src/lib/sheet-sync";
@@ -5,7 +6,8 @@ import { sheetMoneySummary } from "../src/lib/sheet-finance";
 import type { SheetBudget } from "../src/types";
 
 const url = "https://victor-os.example/api/sheet-sync/push";
-const sheetId = "YOUR_GOOGLE_SHEET_ID";
+// Deliberately synthetic fixtures; these are not personal financial records.
+const sheetId = BUDGET_SHEET_ID;
 const key = "a".repeat(64);
 const input = {
   sheetId,

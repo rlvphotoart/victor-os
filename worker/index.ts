@@ -1,3 +1,4 @@
+import { BUDGET_SHEET_ID } from "../src/lib/sheet-config";
 import {
   parseAppData,
   parseRecord,
@@ -42,7 +43,7 @@ const defaultSettings: AppSettings = {
 
 const encoder = new TextEncoder();
 const sessionCookie = "victor_os_session";
-const budgetSheetId = "YOUR_GOOGLE_SHEET_ID";
+const budgetSheetId = BUDGET_SHEET_ID;
 const sheetSyncCollection = "_sheet_sync_auth";
 
 async function sha256(value: string) {
